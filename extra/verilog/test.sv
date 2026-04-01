@@ -24,14 +24,6 @@ module test;
             $dumpvars(0, dut.registers.registers[i]);
         end
 
-        
-        // $dumpvars(0, dut.dbuf_out.pc_plus_1);
-        // $dumpvars(0, dut.dbuf_out.opcode);
-        // $dumpvars(0, dut.dbuf_out.dr);
-        // $dumpvars(0, dut.dbuf_out.val1);
-        // $dumpvars(0, dut.dbuf_out.val2);
-        // $dumpvars(0, dut.dbuf_out.offset);
-
         // Reset everything for 3 clock cycles
         clk = 1'b0;
         rst = 1'b1;

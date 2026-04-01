@@ -13,6 +13,9 @@ module pipeline(
 
 logic [31:0] PC;
 
+// Stop forever for halting
+logic halt_now;
+// Stop for a load-use hazard
 logic stall_now;
 
 logic branch_true;
@@ -29,21 +32,56 @@ mbuf_data mbuf_in, mbuf_out;
 
 always_ff @(posedge clk) begin
     if (rst) begin
-        stall_now <= 1'b0;
+        halt_now <= 1'b0;
     end else if (dbuf_out.opcode == OP_HALT) begin
         // As soon as we get HALT in the exec stage,
         // latch onto the STALL forever and forever.
-        stall_now <= 1'b1;
+        halt_now <= 1'b1;
     end
 
     if (rst) begin
         PC <= 32'd0;
-    end else if (!stall_now) begin
+    end else if (!halt_now && !stall_now) begin
         // We ONLY want to change PC if we're not Stalled
         PC <= branch_true? branch_target_line : (PC + 1);
     end
 end
 
+// ********** //
+// PERF STATS //
+// ********** //
+logic [31:0] stat_cycles;
+logic [31:0] stat_stalls;
+logic [31:0] stat_flushes;
+logic [31:0] stat_branches_seen;
+logic [31:0] stat_branches_correct;
+logic [31:0] stat_branches_incorrect;
+
+always_ff @(posedge clk) begin
+    if (rst) begin
+        stat_cycles <= '0;
+        stat_stalls <= '0;
+        stat_flushes <= '0;
+        stat_branches_seen <= '0;
+        stat_branches_correct <= '0;
+        stat_branches_incorrect <= '0;
+    end else begin
+        if (!halt_now) stat_cycles <= stat_cycles + 1;
+
+        if (stall_now) stat_stalls <= stat_stalls + 1;
+
+        // If branch_true, then our policy of predicting not taken was wrong
+        if (branch_true) stat_flushes <= stat_flushes + 1;
+
+        if (dbuf_out.opcode == OP_BEQ || dbuf_out.opcode == OP_BGT) begin
+            stat_branches_seen <= stat_branches_seen + 1;
+            // If not branch_true, then we were correct in prredicting not taken
+            if (!branch_true) stat_branches_correct <= stat_branches_correct + 1;
+
+            stat_branches_incorrect = stat_branches_seen - stat_branches_correct;
+        end
+    end
+end
 
 // *********** //
 // FETCH STAGE //
@@ -69,7 +107,7 @@ end
 always_ff @(posedge clk) begin
     // If Stalled,
     // then we can't forward our newly fetched instruction to the Decode Stage
-    if (!stall_now) begin
+    if (!halt_now && !stall_now) begin
         fbuf_out <= (rst || branch_true) ? '0 : fbuf_in;
     end
 end
@@ -80,7 +118,7 @@ end
 // ************ //
 
 instruction_data ins;
-assign ins = (rst || branch_true || stall_now) ? '0 : fbuf_out.instruction;
+assign ins = (rst || branch_true || halt_now) ? '0 : fbuf_out.instruction;
 // Create Bubble (NOOP) when branch taken or stalled
 
 logic is_immediate;
@@ -174,6 +212,10 @@ dprf registers (
 );
 
 
+assign stall_now = (dbuf_out.dr != 4'd0) && (dbuf_out.opcode == OP_LW)
+                    && ((dbuf_out.dr == sr1) || (dbuf_out.dr == sr2));
+
+
 logic [19:0] imm_wire;
 
 always_comb begin
@@ -183,9 +225,6 @@ always_comb begin
     dbuf_in.opcode = ins.opcode;
     dbuf_in.dr = dr;
 
-    // So... we need to do Data Forwarding
-    // But ummm.... as of the time I'm writing, I'm too tired to modularize
-    // So, remember to copy and paste and edit properly!!!
     dbuf_in.val1 = dout1;
     dbuf_in.sr1 = sr1;
 
@@ -198,7 +237,10 @@ always_comb begin
 end
 
 always_ff @(posedge clk) begin
-    dbuf_out <= (rst || stall_now || (dbuf_out.opcode == OP_HALT)) ? '0 : dbuf_in;
+    // Need to check halt_now and dbuf_out.opcode because
+    // halt_now is only latched on the clock cycle, so it wouldn't propogate
+    // fast enough to prevent the decode stage from forwarding this
+    dbuf_out <= (rst || halt_now || stall_now || (dbuf_out.opcode == OP_HALT)) ? '0 : dbuf_in;
 end
 
 // DEBUGGGING //
@@ -230,6 +272,20 @@ always_comb begin
     fwd_val1 = dbuf_out.val1;
     fwd_val2 = dbuf_out.val2;
     
+    // So... we need to do Data Forwarding
+    // But ummm.... as of the time I'm writing, I'm too tired to modularize
+    // So, remember to copy and paste and edit properly!!!
+
+    // Also, the diagram put this before the DBUF,
+    // but we're doing this afterwards and overwriting the data from dbuf
+    // because the data is latched at the end of the cycle,
+    // so we would want to wait until after the EX and MEM stages are done,
+    // so that they can latch their data into the buffer and then we forward.
+    // Oh wait, I could have also checked mbuf_in and ebuf_in instead...
+    // Then I could've done what the diagram did and forward at the end of the
+    // decode stage before the execute stage.
+    // Oh well! This works and I don't care anymore!
+
     // 1. Check Results of Memory Stage First (older data, so lower priority)
     if ((mbuf_out.dr != 4'd0) && (mbuf_out.dr == dbuf_out.sr1)) begin
         fwd_val1 = mbuf_out.data;
