@@ -1,0 +1,10 @@
+add $X,$Y,$Z         :0XY0000Z
+nand $X,$Y,$Z        :1XY0000Z
+addi $X,$Y,#I        :2XY    I
+lw $X,#I\s*\($Y\)    :3XY    I
+sw $X,#I\s*\($Y\)    :4XY    I
+beq $X,$Y,%O         :5XY    O
+jalr $X,$Y           :6XY00000
+halt                 :70000000
+bgt $X,$Y,%O         :8XY    O
+lea $X,%O            :9X0    O
