@@ -20,12 +20,25 @@
  * 
  * HINTS:
  *      - pcb_t: struct defined in pagesim.h that is a process's PCB.
- *      - You are not guaranteed that the memory returned by the free frame allocator
- *      is empty - an existing frame could have been evicted for our new page table.
+ *      - You are not guaranteed that the memory returned by the free frame allocator is empty
+ *      - an existing frame could have been evicted for our new page table.
  * -----------------------------------------------------------------------
  */
 void proc_init(pcb_t *proc) {
-    /* FIX ME */
+    pfn_t new_frame = free_frame();
+
+    for (int i = 0; i < PAGE_SIZE; i++) {
+        mem[new_frame * PAGE_SIZE + i] = 0;
+    }
+
+    fte_t* ft = &frame_table[new_frame];
+
+    ft->protected = 1;
+    ft->mapped = 1;
+    ft->ref_count = 0;
+    ft->process = proc;
+    // No VPN because this is the page table for that process
+    proc->saved_ptbr = new_frame; 
 }
 
 
@@ -46,7 +59,8 @@ void proc_init(pcb_t *proc) {
  * --------------------------------------------------------------------------
  */
 void context_switch(pcb_t *proc) {
-    /* FIX ME */
+    PTBR = proc->saved_ptbr;
+    current_process = proc;
 }
 
 /**
@@ -62,7 +76,31 @@ void context_switch(pcb_t *proc) {
  * -------------------------------------------------------------------------
  */
 void proc_cleanup(pcb_t *proc) {
-    /* FIX ME */
+    pte_t *page_table = get_page_table(proc->saved_ptbr, mem);
+
+    for (int i = 0; i < NUM_PAGES; i++) {
+        pte_t *pte = &page_table[i]; 
+        if (pte->valid) {
+            frame_table[pte->pfn].mapped = 0; 
+            frame_table[pte->pfn].ref_count = 0;
+            frame_table[pte->pfn].vpn = 0;
+            frame_table[pte->pfn].process = NULL;
+            frame_table[pte->pfn].protected = 0;
+            pte->valid = 0;
+        }
+
+        if (swap_exists(pte)) {
+            swap_free(pte);
+        }
+    }
+
+    fte_t *fte = &frame_table[proc->saved_ptbr];
+
+    fte->mapped = 0;
+    fte->protected = 0;
+    fte->ref_count = 0;
+    fte->process = NULL;
+    fte->vpn = 0;
 }
 
 #pragma GCC diagnostic pop

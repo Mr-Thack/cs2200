@@ -53,5 +53,26 @@ void system_init(void) {
  * -----------------------------------------------------------------------
  */
 uint8_t mem_access(vaddr_t address, char access, uint8_t data) {
-    return 0;
+    vpn_t vpn = get_vaddr_vpn(address);
+    uint16_t offset = get_vaddr_offset(address);
+
+    pte_t *pte = get_page_table_entry(vpn, PTBR, mem);
+
+    stats.accesses++;
+
+    if (!pte->valid) {
+        page_fault(address);
+    }
+
+    paddr_t paddr = get_physical_address(pte->pfn, offset); 
+
+    pte->referenced = 1;
+   
+    if (access == 'r') {
+        return mem[paddr];
+    } else {
+        mem[paddr] = data;
+        pte->dirty = 1;
+        return data;
+    }
 }

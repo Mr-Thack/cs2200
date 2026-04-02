@@ -121,7 +121,7 @@ pfn_t select_victim_frame()
                 if (pte->referenced) {
                     pte->referenced = 0;
                 } else {
-                    last_evicted = victim_pfn;
+                    last_evicted = (victim_pfn + 1) % NUM_FRAMES;
                     return victim_pfn;
                 }
             }
@@ -143,5 +143,20 @@ pfn_t select_victim_frame()
  */
 void daemon_update(void)
 {
-    /* FIX ME */
+    // Starting from 1 because recall that 0 is already reserved for frame_table
+    for (size_t i = 1; i < NUM_FRAMES; i++)
+    {
+        if (!frame_table[i].protected && frame_table[i].mapped)
+        {
+            pte_t *pte = get_page_table_entry(frame_table[i].vpn, frame_table[i].process->saved_ptbr, mem);
+            
+            frame_table[i].ref_count >>= 1;
+
+            if (pte->referenced) {
+                frame_table[i].ref_count |= (1 << 7);
+
+                pte->referenced = 0;
+            }
+        }
+    }
 }

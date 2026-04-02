@@ -2,6 +2,7 @@
 #include "pagesim.h"
 #include "swapops.h"
 #include "stats.h"
+#include "address_splitting.h"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
@@ -25,7 +26,34 @@
  * ---------------------------------------------------------------------
  */
 void page_fault(vaddr_t address) {
-    /* FIX ME */
+    stats.page_faults++;
+
+    vpn_t vpn = get_vaddr_vpn(address);
+
+    pte_t *pte = get_page_table_entry(vpn, current_process->saved_ptbr, mem);
+
+    pfn_t pfn = free_frame();
+
+    if (swap_exists(pte)) {
+        swap_read(pte, mem + (pfn * PAGE_SIZE));
+    } else {
+        // New mem, so zero it out
+        for (int i = 0; i < PAGE_SIZE; i++) {
+            mem[pfn * PAGE_SIZE + i] = 0;
+        }
+    }
+
+    // Update Page Table
+    pte->pfn = pfn;
+    pte->valid = 1;
+    pte->dirty = 0;
+
+    // Update corresponding frame table entry
+    fte_t *fte = &frame_table[pfn];
+    fte->mapped = 1;
+    fte->ref_count = 0;
+    fte->process = current_process;
+    fte->vpn = vpn;
 }
 
 #pragma GCC diagnostic pop
