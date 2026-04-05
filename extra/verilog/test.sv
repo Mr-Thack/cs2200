@@ -12,7 +12,7 @@ module test;
 
     initial begin
         // Record here
-        $dumpfile("waves.vcd"); 
+        $dumpfile("build/waves.vcd"); 
         $dumpvars(0, test);
 
         // By default, the registers are not dumped on a wire

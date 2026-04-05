@@ -3,36 +3,49 @@ TYPES = types.sv
 SRC = pipeline.sv
 COMPONENTS = alu.sv dprf.sv mem.sv
 TB = test.sv
-OUT = a.out
-NETLIST = netlist.json
 
-# --- Targets ---
+SV_SRCS = $(TYPES) $(COMPONENTS) $(SRC)
+V_SRCS = build/design.v
 
+OUT = build/a.out
+NETLIST = build/netlist.json
+SIM = build/cpu.sim
+
+# --- Default ---
 all: test
 
-# Compiles with SystemVerilog-2012 support and runs the simulation
+# --- Simulation (SystemVerilog directly) ---
 test:
 	@echo "--- Compiling Simulation ---"
-	iverilog -g2012 -o $(OUT) $(TYPES) $(COMPONENTS) $(SRC) $(TB)
+	iverilog -g2012 -o $(OUT) $(SV_SRCS) $(TB)
 	@echo "--- Running Simulation ---"
 	vvp $(OUT)
-	@echo "--- Simulation Complete ---"
-	@echo "--- Showing Simulation ---"
-	gtkwave waves.vcd layout.gtkw 
-	
+	@echo "--- Opening GTKWave ---"
+	gtkwave ./build/waves.vcd layout.gtkw
 
-# Runs Yosys to synthesize the pipeline into a JSON netlist
-netlist:
+# --- Step 1: Convert SV → Verilog ---
+verilog:
+	@echo "--- Converting SystemVerilog to Verilog ---"
+	mkdir -p build
+	sv2v $(SV_SRCS) -w $(V_SRCS)
+
+# --- Step 2: Yosys synthesis ---
+netlist: verilog
 	@echo "--- Synthesizing Netlist ---"
-	yosys -p "read_verilog -sv $(TYPES) $(COMPONENTS) $(SRC); prep -top pipeline; write_json $(NETLIST)"
-	@echo "--- Netlist Generated: $(NETLIST) ---"
+	yosys -p "read_verilog $(V_SRCS); prep -top pipeline; write_json $(NETLIST)"
+	@echo "--- Netlist Generated ---"
 
-# Opens the generated netlist in xdot for visual inspection
-show: netlist
-	@echo "--- Opening xdot ---"
-	yosys -p "read_verilog -sv $(TYPES) $(COMPONENTS) $(SRC); prep -top pipeline; show"
+# --- Step 3: CircuitSim generation ---
+sim: netlist
+	@echo "--- Generating CircuitSim file ---"
+	python compiler.py $(NETLIST) $(SIM)
+	@echo "--- Opening CircuitSim ---"
+	CircuitSim $(SIM)
 
-# Cleans up generated files to keep your directory tidy
+# --- Debug graph (optional) ---
+show: verilog
+	yosys -p "read_verilog $(V_SRCS); prep -top pipeline; show -prefix build/graph"
+
+# --- Cleanup ---
 clean:
-	@echo "--- Cleaning Workspace ---"
-	rm -f $(OUT) $(NETLIST) *.vcd
+	rm -rf build $(OUT) *.vcd $(SIM)

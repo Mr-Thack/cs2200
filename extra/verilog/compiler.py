@@ -886,7 +886,7 @@ if __name__ == "__main__":
     compiler = CircuitBuilder()
 
     # 1. Parse the Silicon Netlist into the Compiler Memory
-    parse_yosys_netlist(compiler, "netlist.json")
+    parse_yosys_netlist(compiler, "build/netlist.json")
 
     # 2. Forge the Signature and Save!
-    compiler.save("cpu.sim")
+    compiler.save("build/cpu.sim")
