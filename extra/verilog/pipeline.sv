@@ -1,6 +1,10 @@
 module pipeline(
     input logic clk,
-    input logic rst
+    input logic rst,
+
+    output logic [31:0] debug_pc,
+    output logic halt_flag,
+    output logic [31:0] out_stat_cycles
 );
 
 // Everything is defined left to right
@@ -80,6 +84,12 @@ always_ff @(posedge clk) begin
         end
     end
 end
+
+// These are here to force Yosys to compile this module
+assign debug_pc = PC;
+assign halt_flag = halt_now;
+assign out_stat_cycles = stat_cycles;
+
 
 // *********** //
 // FETCH STAGE //
