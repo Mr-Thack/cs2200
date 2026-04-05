@@ -11,16 +11,10 @@ module mem #(
 );
     localparam SIZE = 2**16;
 
-    logic [31:0] RAM [SIZE];
+    (* nomem2reg *) logic [31:0] RAM [SIZE];
 
     // Load from Init ROM, if it exists
     initial begin
-        // First, zero everything out (INIT ROM might not fill entire ROM)
-
-        for (int i = 0; i < SIZE; i++) begin
-            RAM[i] = '0;
-        end
-
         if (INIT != "") begin
             $readmemh(INIT, RAM);
         end

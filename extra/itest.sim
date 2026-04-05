@@ -1,0 +1,15 @@
+{
+  "version": "1.11.2-CE",
+  "globalBitSize": 1,
+  "clockSpeed": 1,
+  "circuits": [
+    {
+      "name": "New circuit",
+      "components": [],
+      "wires": []
+    }
+  ],
+  "revisionSignatures": [
+    "CWYyNjEyYzM1ZDM4NWU3NDQ0NjI4ODViODJhNDRjN2Y3NGE3ZWNhNmZkOTg0ZmI0MDRiZDc1ZTFhNDBiZDE1Y2QJMTc3NTM0MDMzNDYzNAliNTQzZDY0NTE1Y2U1YzE4M2JhNjU4MmRmNmJiOWEzMTQ2MWYyNzNmOWFiZGQ4NzZkYjVmYWYwNGZhODY1ZWYx"
+  ]
+}

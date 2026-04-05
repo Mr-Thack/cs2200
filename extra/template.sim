@@ -1,0 +1,1386 @@
+{
+  "version": "1.11.2-CE",
+  "globalBitSize": 1,
+  "clockSpeed": 1,
+  "circuits": [
+    {
+      "name": "CircuitMain",
+      "components": [
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 8,
+          "y": 39,
+          "properties": {
+            "Label": "T0005",
+            "Direction": "NORTH",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 8,
+          "y": 48,
+          "properties": {
+            "Label": "T0005",
+            "Direction": "NORTH",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 8,
+          "y": 57,
+          "properties": {
+            "Label": "T0005",
+            "Direction": "NORTH",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 30,
+          "y": 10,
+          "properties": {
+            "Label": "T000B",
+            "Direction": "NORTH",
+            "Width": "4",
+            "Bitsize": "2"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 30,
+          "y": 29,
+          "properties": {
+            "Label": "T000C",
+            "Direction": "NORTH",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 31,
+          "y": 20,
+          "properties": {
+            "Label": "T000B",
+            "Direction": "NORTH",
+            "Width": "4",
+            "Bitsize": "2"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 32,
+          "y": 29,
+          "properties": {
+            "Label": "T0000",
+            "Direction": "NORTH",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 31,
+          "y": 62,
+          "properties": {
+            "Label": "T0003",
+            "Direction": "NORTH",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 32,
+          "y": 39,
+          "properties": {
+            "Label": "T0000",
+            "Direction": "NORTH",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 33,
+          "y": 39,
+          "properties": {
+            "Label": "T0001",
+            "Direction": "NORTH",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 33,
+          "y": 50,
+          "properties": {
+            "Label": "T0003",
+            "Direction": "NORTH",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 34,
+          "y": 39,
+          "properties": {
+            "Label": "T0002",
+            "Direction": "NORTH",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 35,
+          "y": 39,
+          "properties": {
+            "Label": "T0003",
+            "Direction": "NORTH",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 56,
+          "y": 10,
+          "properties": {
+            "Label": "T0003",
+            "Direction": "NORTH",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 31,
+          "y": 55,
+          "properties": {
+            "Label": "T000C",
+            "Direction": "SOUTH",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 56,
+          "y": 3,
+          "properties": {
+            "Label": "T000C",
+            "Direction": "SOUTH",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 55,
+          "y": 43,
+          "properties": {
+            "Label": "TZERO",
+            "Direction": "WEST",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 55,
+          "y": 38,
+          "properties": {
+            "Label": "T_CLK",
+            "Direction": "WEST",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 3,
+          "y": 4,
+          "properties": {
+            "Label": "T0000",
+            "Direction": "EAST",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 3,
+          "y": 6,
+          "properties": {
+            "Label": "T0001",
+            "Direction": "EAST",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 3,
+          "y": 10,
+          "properties": {
+            "Label": "T0000",
+            "Direction": "EAST",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 3,
+          "y": 12,
+          "properties": {
+            "Label": "T0001",
+            "Direction": "EAST",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 3,
+          "y": 16,
+          "properties": {
+            "Label": "T0000",
+            "Direction": "EAST",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 3,
+          "y": 18,
+          "properties": {
+            "Label": "T0002",
+            "Direction": "EAST",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 3,
+          "y": 22,
+          "properties": {
+            "Label": "T0000",
+            "Direction": "EAST",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 2,
+          "y": 54,
+          "properties": {
+            "Label": "T0008",
+            "Direction": "EAST",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 3,
+          "y": 24,
+          "properties": {
+            "Label": "T0002",
+            "Direction": "EAST",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 3,
+          "y": 28,
+          "properties": {
+            "Label": "T0000",
+            "Direction": "EAST",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 3,
+          "y": 30,
+          "properties": {
+            "Label": "T0002",
+            "Direction": "EAST",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 3,
+          "y": 34,
+          "properties": {
+            "Label": "T0006",
+            "Direction": "EAST",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 3,
+          "y": 37,
+          "properties": {
+            "Label": "T0006",
+            "Direction": "EAST",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 3,
+          "y": 44,
+          "properties": {
+            "Label": "T0000",
+            "Direction": "EAST",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 3,
+          "y": 45,
+          "properties": {
+            "Label": "T0001",
+            "Direction": "EAST",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 25,
+          "y": 4,
+          "properties": {
+            "Label": "T0000",
+            "Direction": "EAST",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 25,
+          "y": 5,
+          "properties": {
+            "Label": "T0001",
+            "Direction": "EAST",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 25,
+          "y": 6,
+          "properties": {
+            "Label": "T000D",
+            "Direction": "EAST",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 25,
+          "y": 7,
+          "properties": {
+            "Label": "T000E",
+            "Direction": "EAST",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 25,
+          "y": 15,
+          "properties": {
+            "Label": "T0008",
+            "Direction": "EAST",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 25,
+          "y": 16,
+          "properties": {
+            "Label": "T0009",
+            "Direction": "EAST",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 25,
+          "y": 26,
+          "properties": {
+            "Label": "T0009",
+            "Direction": "EAST",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 25,
+          "y": 27,
+          "properties": {
+            "Label": "T000A",
+            "Direction": "EAST",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 25,
+          "y": 35,
+          "properties": {
+            "Label": "T001D",
+            "Direction": "EAST",
+            "Width": "4",
+            "Bitsize": "8"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 25,
+          "y": 46,
+          "properties": {
+            "Label": "T001D",
+            "Direction": "EAST",
+            "Width": "4",
+            "Bitsize": "8"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 25,
+          "y": 58,
+          "properties": {
+            "Label": "T0006",
+            "Direction": "EAST",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 25,
+          "y": 60,
+          "properties": {
+            "Label": "T0006",
+            "Direction": "EAST",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 50,
+          "y": 48,
+          "properties": {
+            "Label": "T001E",
+            "Direction": "EAST",
+            "Width": "4",
+            "Bitsize": "16"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 50,
+          "y": 6,
+          "properties": {
+            "Label": "T0006",
+            "Direction": "EAST",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 50,
+          "y": 8,
+          "properties": {
+            "Label": "T0006",
+            "Direction": "EAST",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 50,
+          "y": 17,
+          "properties": {
+            "Label": "T0000",
+            "Direction": "EAST",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 50,
+          "y": 23,
+          "properties": {
+            "Label": "T0000",
+            "Direction": "EAST",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 50,
+          "y": 25,
+          "properties": {
+            "Label": "T0001",
+            "Direction": "EAST",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 50,
+          "y": 31,
+          "properties": {
+            "Label": "T0000",
+            "Direction": "EAST",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 73,
+          "y": 4,
+          "properties": {
+            "Label": "T001E",
+            "Direction": "EAST",
+            "Width": "4",
+            "Bitsize": "16"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 11,
+          "y": 37,
+          "properties": {
+            "Label": "T0001",
+            "Direction": "WEST",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 11,
+          "y": 53,
+          "properties": {
+            "Label": "T0009",
+            "Direction": "WEST",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 11,
+          "y": 54,
+          "properties": {
+            "Label": "T000A",
+            "Direction": "WEST",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 12,
+          "y": 34,
+          "properties": {
+            "Label": "T0007",
+            "Direction": "WEST",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 13,
+          "y": 5,
+          "properties": {
+            "Label": "T0002",
+            "Direction": "WEST",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 13,
+          "y": 11,
+          "properties": {
+            "Label": "T0003",
+            "Direction": "WEST",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 12,
+          "y": 45,
+          "properties": {
+            "Label": "T0008",
+            "Direction": "WEST",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 13,
+          "y": 17,
+          "properties": {
+            "Label": "T0004",
+            "Direction": "WEST",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 13,
+          "y": 23,
+          "properties": {
+            "Label": "T0005",
+            "Direction": "WEST",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 13,
+          "y": 29,
+          "properties": {
+            "Label": "T0006",
+            "Direction": "WEST",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 34,
+          "y": 6,
+          "properties": {
+            "Label": "T000C",
+            "Direction": "WEST",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 34,
+          "y": 14,
+          "properties": {
+            "Label": "T0010",
+            "Direction": "WEST",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 34,
+          "y": 15,
+          "properties": {
+            "Label": "T0011",
+            "Direction": "WEST",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 34,
+          "y": 16,
+          "properties": {
+            "Label": "T0012",
+            "Direction": "WEST",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 34,
+          "y": 17,
+          "properties": {
+            "Label": "T0013",
+            "Direction": "WEST",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 35,
+          "y": 26,
+          "properties": {
+            "Label": "T0014",
+            "Direction": "WEST",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 35,
+          "y": 59,
+          "properties": {
+            "Label": "T0020",
+            "Direction": "WEST",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 40,
+          "y": 35,
+          "properties": {
+            "Label": "T001E",
+            "Direction": "WEST",
+            "Width": "4",
+            "Bitsize": "16"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 40,
+          "y": 46,
+          "properties": {
+            "Label": "T001F",
+            "Direction": "WEST",
+            "Width": "4",
+            "Bitsize": "32"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 58,
+          "y": 50,
+          "properties": {
+            "Label": "T0030",
+            "Direction": "WEST",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 58,
+          "y": 51,
+          "properties": {
+            "Label": "T0031",
+            "Direction": "WEST",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 58,
+          "y": 52,
+          "properties": {
+            "Label": "T0032",
+            "Direction": "WEST",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 58,
+          "y": 53,
+          "properties": {
+            "Label": "T0033",
+            "Direction": "WEST",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 58,
+          "y": 54,
+          "properties": {
+            "Label": "T0034",
+            "Direction": "WEST",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 58,
+          "y": 55,
+          "properties": {
+            "Label": "T0035",
+            "Direction": "WEST",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 58,
+          "y": 56,
+          "properties": {
+            "Label": "T0036",
+            "Direction": "WEST",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 58,
+          "y": 57,
+          "properties": {
+            "Label": "T0037",
+            "Direction": "WEST",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 58,
+          "y": 60,
+          "properties": {
+            "Label": "T003A",
+            "Direction": "WEST",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 58,
+          "y": 58,
+          "properties": {
+            "Label": "T0038",
+            "Direction": "WEST",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 58,
+          "y": 61,
+          "properties": {
+            "Label": "T003B",
+            "Direction": "WEST",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 58,
+          "y": 62,
+          "properties": {
+            "Label": "T003C",
+            "Direction": "WEST",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 58,
+          "y": 59,
+          "properties": {
+            "Label": "T0039",
+            "Direction": "WEST",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 58,
+          "y": 63,
+          "properties": {
+            "Label": "T003D",
+            "Direction": "WEST",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 58,
+          "y": 64,
+          "properties": {
+            "Label": "T003E",
+            "Direction": "WEST",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 58,
+          "y": 65,
+          "properties": {
+            "Label": "T003F",
+            "Direction": "WEST",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 60,
+          "y": 7,
+          "properties": {
+            "Label": "T0020",
+            "Direction": "WEST",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 60,
+          "y": 17,
+          "properties": {
+            "Label": "T0021",
+            "Direction": "WEST",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 60,
+          "y": 23,
+          "properties": {
+            "Label": "T0022",
+            "Direction": "WEST",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 60,
+          "y": 24,
+          "properties": {
+            "Label": "T0023",
+            "Direction": "WEST",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 60,
+          "y": 25,
+          "properties": {
+            "Label": "T0024",
+            "Direction": "WEST",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 60,
+          "y": 31,
+          "properties": {
+            "Label": "T0025",
+            "Direction": "WEST",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 81,
+          "y": 6,
+          "properties": {
+            "Label": "T0040",
+            "Direction": "WEST",
+            "Width": "4",
+            "Bitsize": "8"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 81,
+          "y": 7,
+          "properties": {
+            "Label": "T0041",
+            "Direction": "WEST",
+            "Width": "4",
+            "Bitsize": "8"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.ConstantPeer",
+          "x": 53,
+          "y": 43,
+          "properties": {
+            "Label location": "NORTH",
+            "Label": "ZERO",
+            "Value": "0",
+            "Direction": "EAST",
+            "Bitsize": "1",
+            "Base": "BINARY"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.arithmetic.ComparatorPeer",
+          "x": 56,
+          "y": 23,
+          "properties": {
+            "Comparison Type": "2\u0027s complement",
+            "Label location": "NORTH",
+            "Label": "",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.memory.RegisterPeer",
+          "x": 31,
+          "y": 25,
+          "properties": {
+            "Label location": "NORTH",
+            "Label": "",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.arithmetic.BitExtenderPeer",
+          "x": 56,
+          "y": 30,
+          "properties": {
+            "Input Bitsize": "1",
+            "Label location": "NORTH",
+            "Output Bitsize": "1",
+            "Label": "",
+            "Extension Type": "SIGN"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.gates.NorGatePeer",
+          "x": 9,
+          "y": 22,
+          "properties": {
+            "Negate 1": "No",
+            "Label location": "NORTH",
+            "Negate 0": "No",
+            "Number of Inputs": "2",
+            "Label": "",
+            "Direction": "EAST",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.gates.NandGatePeer",
+          "x": 9,
+          "y": 10,
+          "properties": {
+            "Negate 1": "No",
+            "Label location": "NORTH",
+            "Negate 0": "No",
+            "Number of Inputs": "2",
+            "Label": "",
+            "Direction": "EAST",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.gates.AndGatePeer",
+          "x": 9,
+          "y": 4,
+          "properties": {
+            "Negate 1": "No",
+            "Label location": "NORTH",
+            "Negate 0": "No",
+            "Number of Inputs": "2",
+            "Label": "",
+            "Direction": "EAST",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.ClockPeer",
+          "x": 53,
+          "y": 38,
+          "properties": {
+            "Label location": "NORTH",
+            "Label": "CLK",
+            "Direction": "EAST"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.gates.OrGatePeer",
+          "x": 9,
+          "y": 16,
+          "properties": {
+            "Negate 1": "No",
+            "Label location": "NORTH",
+            "Negate 0": "No",
+            "Number of Inputs": "2",
+            "Label": "",
+            "Direction": "EAST",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.plexers.DemultiplexerPeer",
+          "x": 8,
+          "y": 53,
+          "properties": {
+            "Selector location": "Right/Down",
+            "Label location": "NORTH",
+            "Selector bits": "1",
+            "Label": "",
+            "Direction": "EAST",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.plexers.DemultiplexerPeer",
+          "x": 31,
+          "y": 14,
+          "properties": {
+            "Selector location": "Right/Down",
+            "Label location": "NORTH",
+            "Selector bits": "2",
+            "Label": "",
+            "Direction": "EAST",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.gates.XnorGatePeer",
+          "x": 9,
+          "y": 28,
+          "properties": {
+            "Negate 1": "No",
+            "Label location": "NORTH",
+            "Negate 0": "No",
+            "Number of Inputs": "2",
+            "Label": "",
+            "Direction": "EAST",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.plexers.MultiplexerPeer",
+          "x": 9,
+          "y": 44,
+          "properties": {
+            "Selector location": "Right/Down",
+            "Label location": "NORTH",
+            "Selector bits": "1",
+            "Label": "",
+            "Direction": "EAST",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.plexers.MultiplexerPeer",
+          "x": 31,
+          "y": 4,
+          "properties": {
+            "Selector location": "Right/Down",
+            "Label location": "NORTH",
+            "Selector bits": "2",
+            "Label": "",
+            "Direction": "EAST",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.arithmetic.NegatorPeer",
+          "x": 56,
+          "y": 16,
+          "properties": {
+            "Label location": "NORTH",
+            "Label": "",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.SplitterPeer",
+          "x": 56,
+          "y": 49,
+          "properties": {
+            "Fanouts": "16",
+            "Input location": "Left/Top",
+            "Label": "",
+            "Bit 12": "12",
+            "Bit 13": "13",
+            "Bit 14": "14",
+            "Bit 15": "15",
+            "Bit 2": "2",
+            "Direction": "EAST",
+            "Bit 1": "1",
+            "Bitsize": "16",
+            "Bit 0": "0",
+            "Bit 10": "10",
+            "Bit 11": "11",
+            "Bit 6": "6",
+            "Bit 5": "5",
+            "Bit 4": "4",
+            "Label location": "NORTH",
+            "Bit 3": "3",
+            "Bit 9": "9",
+            "Bit 8": "8",
+            "Bit 7": "7"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.SplitterPeer",
+          "x": 79,
+          "y": 5,
+          "properties": {
+            "Fanouts": "2",
+            "Input location": "Left/Top",
+            "Label": "",
+            "Bit 12": "1",
+            "Bit 13": "1",
+            "Bit 14": "1",
+            "Bit 15": "1",
+            "Bit 2": "0",
+            "Direction": "EAST",
+            "Bit 1": "0",
+            "Bitsize": "16",
+            "Bit 0": "0",
+            "Bit 10": "1",
+            "Bit 11": "1",
+            "Bit 6": "0",
+            "Bit 5": "0",
+            "Bit 4": "0",
+            "Label location": "NORTH",
+            "Bit 3": "0",
+            "Bit 9": "1",
+            "Bit 8": "1",
+            "Bit 7": "0"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.arithmetic.SubtractorPeer",
+          "x": 56,
+          "y": 6,
+          "properties": {
+            "Label location": "NORTH",
+            "Label": "",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.arithmetic.AdderPeer",
+          "x": 31,
+          "y": 58,
+          "properties": {
+            "Label location": "NORTH",
+            "Label": "",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.gates.ControlledBufferPeer",
+          "x": 9,
+          "y": 37,
+          "properties": {
+            "Label location": "NORTH",
+            "Label": "",
+            "Direction": "EAST",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.gates.NotGatePeer",
+          "x": 9,
+          "y": 34,
+          "properties": {
+            "Label location": "NORTH",
+            "Label": "",
+            "Direction": "EAST",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.memory.RAMPeer",
+          "x": 31,
+          "y": 34,
+          "properties": {
+            "Separate Load/Store Ports?": "No",
+            "Label location": "NORTH",
+            "Label": "",
+            "Bitsize": "16",
+            "Address bits": "8"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.memory.ROMPeer",
+          "x": 31,
+          "y": 45,
+          "properties": {
+            "Label location": "NORTH",
+            "Contents": "256-00000000",
+            "Label": "",
+            "Bitsize": "32",
+            "Address bits": "8"
+          }
+        }
+      ],
+      "wires": []
+    }
+  ],
+  "revisionSignatures": [
+    "CTY4YjAwNzRmOGM2ZjVkZjM3NWRhNTI2NmM1MDc2ZGM1MmU2MDAzYWZkMTEyZWJlOWFjZmQwODk1NGQ1NTJjYTIJMTc3NTA5MDM4MzQ4OAkxYzM1OTJkOTg5MmM5YWNmMDM0YjJmNDZmZDVkOWVkZDRjMmVhYmMyNWU5MTE3MGYwNDRhYjc0ZGQ4OTc4YWY3",
+    "NjhiMDA3NGY4YzZmNWRmMzc1ZGE1MjY2YzUwNzZkYzUyZTYwMDNhZmQxMTJlYmU5YWNmZDA4OTU0ZDU1MmNhMgkxODc4ZGNiM2U5MjM1YTRiMDdkZmE4OTgzODZhOTczNGY4ODMyOGI3MzdlMGI0NDRmNzc1MTI1YWU1NjI0NDRlCTE3NzUwOTA1MjI5MDIJMWFkYmVmMWIyM2M1ZTdhYzM5ODIzOWIwOTBjNzZlOTMzMzFmYmMwZmJlY2EwMjNmMWQzZjQ3NjY1ZWM2OTljZA\u003d\u003d",
+    "MTg3OGRjYjNlOTIzNWE0YjA3ZGZhODk4Mzg2YTk3MzRmODgzMjhiNzM3ZTBiNDQ0Zjc3NTEyNWFlNTYyNDQ0ZQk5MjRiYjg5NGZjNDM2OTAyMzRmMzZhN2JiYjY4OWVhOWMyNDE5MmVhMWYzNDdmMzA2OGJhZGY4MTQzYjVjNWFiCTE3NzUwOTA1MjUyNTEJMWFkYmVmMWIyM2M1ZTdhYzM5ODIzOWIwOTBjNzZlOTMzMzFmYmMwZmJlY2EwMjNmMWQzZjQ3NjY1ZWM2OTljZA\u003d\u003d"
+  ]
+}

@@ -18,7 +18,7 @@ module dprf(
         if (rst) begin
             // Clear all registers
             for (int i = 0; i < NUM_REG; i++) begin
-                registers[i] <= '0;
+                registers[i] <= 32'd0;
             end
         end else if (we && regno_write != 4'd0) begin
             // If Write_Enable and not $zero, write
@@ -26,17 +26,19 @@ module dprf(
         end
     end
 
-    function logic [31:0] read_port(input logic [3:0] regno);
-        if (regno == 4'd0) begin
-            return '0; // Force to 0 in case of bad initialization
-        end else if (we && (regno_write == regno)) begin
-            return write_data; // Port Forwarding
-        end else begin
-            return registers[regno];
-        end
-    endfunction
+    // A long time ago, these two lines below were a nice pretty function
+    // BUT, the stupid retarded Yosys was incapable of understanding
+    // that this is just a fancy mux.
+    // That's ok I guess. But, now we've got this ugly ternary operator
 
-    assign read_data1 = read_port(regno_read1); 
-    assign read_data2 = read_port(regno_read2);
+    // Read Port 1
+    assign read_data1 = (regno_read1 == 4'd0) ? 32'd0 :
+                        (we && (regno_write == regno_read1)) ? write_data :
+                        registers[regno_read1];
+
+    // Read Port 2
+    assign read_data2 = (regno_read2 == 4'd0) ? 32'd0 :
+                        (we && (regno_write == regno_read2)) ? write_data :
+                        registers[regno_read2];
 
 endmodule

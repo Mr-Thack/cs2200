@@ -3,14 +3,14 @@ package types;
 
     // 3 bit Operation Code
     typedef enum logic [2:0] {
-        ADD,
-        SUB,
-        NAND,
-        ADD1,
-        PASSA,
-        PASSB,
-        IGNORE
-    } operation;
+        ALU_ADD,
+        ALU_SUB,
+        ALU_NAND,
+        ALU_ADD1,
+        ALU_PASSA,
+        ALU_PASSB,
+        ALU_IGNORE
+    } alu_operation;
 
 
 

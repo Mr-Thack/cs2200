@@ -1,0 +1,56 @@
+{
+  "version": "1.11.2-CE",
+  "globalBitSize": 1,
+  "clockSpeed": 1,
+  "circuits": [
+    {
+      "name": "CircuitMain",
+      "components": [
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.arithmetic.AdderPeer",
+          "x": 15,
+          "y": 10,
+          "properties": {
+            "Label location": "NORTH",
+            "Label": "",
+            "Bitsize": "32"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 10,
+          "y": 11,
+          "properties": {
+            "Label": "W_000A",
+            "Direction": "EAST",
+            "Width": "4",
+            "Bitsize": "32"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 10,
+          "y": 13,
+          "properties": {
+            "Label": "W_000B",
+            "Direction": "EAST",
+            "Width": "4",
+            "Bitsize": "32"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 21,
+          "y": 12,
+          "properties": {
+            "Label": "W__OUT",
+            "Direction": "WEST",
+            "Width": "4",
+            "Bitsize": "32"
+          }
+        }
+      ],
+      "wires": []
+    }
+  ]
+}
