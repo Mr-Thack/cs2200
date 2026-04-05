@@ -1,0 +1,139 @@
+{
+  "version": "1.11.2-CE",
+  "globalBitSize": 1,
+  "clockSpeed": 1,
+  "circuits": [
+    {
+      "name": "New circuit",
+      "components": [
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 26,
+          "y": 14,
+          "properties": {
+            "Label": "RAM_EN",
+            "Direction": "NORTH",
+            "Width": "5",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 25,
+          "y": 14,
+          "properties": {
+            "Label": "RAMCLK",
+            "Direction": "NORTH",
+            "Width": "5",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 28,
+          "y": 14,
+          "properties": {
+            "Label": "RAMCLR",
+            "Direction": "NORTH",
+            "Width": "5",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 18,
+          "y": 10,
+          "properties": {
+            "Label": "RAM_IN",
+            "Direction": "EAST",
+            "Width": "5",
+            "Bitsize": "8"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 34,
+          "y": 10,
+          "properties": {
+            "Label": "RAMOUT",
+            "Direction": "WEST",
+            "Width": "5",
+            "Bitsize": "4"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 27,
+          "y": 34,
+          "properties": {
+            "Label": "ROM_EN",
+            "Direction": "NORTH",
+            "Width": "5",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 19,
+          "y": 30,
+          "properties": {
+            "Label": "ROM_IN",
+            "Direction": "EAST",
+            "Width": "5",
+            "Bitsize": "8"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 35,
+          "y": 30,
+          "properties": {
+            "Label": "ROMOUT",
+            "Direction": "WEST",
+            "Width": "5",
+            "Bitsize": "4"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 27,
+          "y": 14,
+          "properties": {
+            "Label": "W_LOAD",
+            "Direction": "NORTH",
+            "Width": "5",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.memory.ROMPeer",
+          "x": 26,
+          "y": 29,
+          "properties": {
+            "Label location": "NORTH",
+            "Contents": "f 254-0 f",
+            "Label": "",
+            "Bitsize": "4",
+            "Address bits": "8"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.memory.RAMPeer",
+          "x": 25,
+          "y": 9,
+          "properties": {
+            "Separate Load/Store Ports?": "No",
+            "Label location": "NORTH",
+            "Label": "",
+            "Bitsize": "4",
+            "Address bits": "8"
+          }
+        }
+      ],
+      "wires": []
+    }
+  ],
+  "revisionSignatures": [
+    "CWE1ZTJkZDdlYjZmMTZmYTVmMTdkZGRjZmRmYTYzMjYwNTc0NzM2ZGU2MTZmYWNiNTExOGEzYTczNThhNTE0MDIJMTc3NTM1NTczNjc1MQk5NWEzNzg0YmZlMWIzODUyNjJlOTcwNzgzM2JkMjk1MTYzNTBlMzU2MDg5ZWZmNWIzZWE4MmU3MmFlYWMzMzEx"
+  ]
+}

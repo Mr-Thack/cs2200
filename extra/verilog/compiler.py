@@ -54,9 +54,90 @@ class CircuitBuilder:
             }
         )
 
+
+    # ==========================================
+    # MEMORY ENCODING
+    # ==========================================
+
+    @staticmethod
+    def encode_rom_contents(data: List[int], data_bits: int) -> str:
+        """
+        Compresses an array of integers into CircuitSim's Run-Length Encoded Hex format.
+        Matches the Java `PropertyMemoryValidator` perfectly.
+        """
+        if not data:
+            return ""
+
+        # Calculate required hex length based on bitsize (e.g. 32 bits = 8 hex chars)
+        hex_len = 1 + (data_bits - 1) // 4
+
+        def fmt(val):
+            # Mask the value to the correct bit width and format as padded hex
+            val = val & ((1 << data_bits) - 1)
+            return f"{val:0{hex_len}x}"
+
+        encoded = []
+        current_val = data[0]
+        count = 1
+
+        for val in data[1:]:
+            if val == current_val:
+                count += 1
+            else:
+                encoded.append(f"{count}-{fmt(current_val)}" if count > 1 else fmt(current_val))
+                current_val = val
+                count = 1
+
+        # Append the final run
+        encoded.append(f"{count}-{fmt(current_val)}" if count > 1 else fmt(current_val))
+
+        return " ".join(encoded)
+
     # ==========================================
     # COMPONENT "BLOCK" GENERATORS
     # ==========================================
+
+
+    def add_ram(self, x: int, y: int, addr_bits: int, in_addr: Wire, inout_data: Wire, 
+                in_clk: Optional[Wire] = None, in_en: Optional[Wire] = None, 
+                in_load: Optional[Wire] = None, in_clr: Optional[Wire] = None):
+        """Standard RAM block (Single Port / Bidirectional Data)"""
+        self._add_raw_component(
+            "com.ra4king.circuitsim.gui.peers.memory.RAMPeer", x, y,
+            {
+                "Separate Load/Store Ports?": "No",
+                "Label location": "NORTH",
+                "Label": "",
+                "Bitsize": str(inout_data.bitsize),
+                "Address bits": str(addr_bits)
+            }
+        )
+        self.add_tunnel(x - 7, y + 1, "EAST",  in_addr)
+        self.add_tunnel(x + 9, y + 1, "WEST",  inout_data)
+
+        self.add_tunnel(x,     y + 5, "NORTH", in_clk)
+        self.add_tunnel(x + 1, y + 5, "NORTH", in_en)
+        self.add_tunnel(x + 2, y + 5, "NORTH", in_load)
+        self.add_tunnel(x + 3, y + 5, "NORTH", in_clr)
+
+    def add_rom(self, x: int, y: int, addr_bits: int, contents_array: List[int], 
+                in_addr: Wire, out_data: Wire, in_en: Optional[Wire] = None):
+        """Standard ROM Block initialized with an array of integers"""
+        encoded_string = self.encode_rom_contents(contents_array, out_data.bitsize)
+
+        self._add_raw_component(
+            "com.ra4king.circuitsim.gui.peers.memory.ROMPeer", x, y,
+            {
+                "Label location": "NORTH",
+                "Contents": encoded_string,
+                "Label": "",
+                "Bitsize": str(out_data.bitsize),
+                "Address bits": str(addr_bits)
+            }
+        )
+        self.add_tunnel(x - 7, y + 1, "EAST",  in_addr)
+        self.add_tunnel(x + 9, y + 1, "WEST",  out_data)
+        self.add_tunnel(x + 1, y + 5, "NORTH", in_en)
 
     def add_arithmetic(self, peer_type: str, x: int, y: int, in_a: Wire, in_b: Wire, out: Wire, cin: Optional[Wire] = None, cout: Optional[Wire] = None):
         """Handles Adder, Subtractor, Multiplier, Divider, Shifter."""
@@ -121,6 +202,21 @@ class CircuitBuilder:
             }
         )
         self.add_tunnel(x - 6, y, "EAST", in_a)
+        self.add_tunnel(x + 3, y, "WEST", out)
+    
+    def add_buffer(self, x: int, y: int, a: Wire, en: Wire, out: Wire):
+        """Buffer"""
+        self._add_raw_component(
+            "com.ra4king.circuitsim.gui.peers.gates.ControlledBufferPeer", x, y,
+            {
+                "Label location": "NORTH",
+                "Label": "",
+                "Direction": "EAST",
+                "Bitsize": str(out.bitsize)
+            }
+        )
+        self.add_tunnel(x - 6, y, "EAST", a)
+        self.add_tunnel(x - 2, y + 2, "NORTH", en)
         self.add_tunnel(x + 3, y, "WEST", out)
 
     def add_register(self, x: int, y: int, in_d: Wire, out_q: Wire, in_en: Optional[Wire] = None, in_clk: Optional[Wire] = None, in_clr: Optional[Wire] = None):
@@ -217,36 +313,45 @@ class CircuitBuilder:
 if __name__ == "__main__":
     compiler = CircuitBuilder()
 
-    # 1. Spawn a 32-bit Register
-    compiler.add_register(
+    # 1. Spawn a ROM and load it with some sample Hex codes
+    # We want 8 bits of address, and 32 bits of data.
+    # Let's simulate a memory array where the first few words are instructions, and the rest is zeroes.
+    sample_instructions = [
+        0xDEADBEEF,  # Word 0
+        0x12345678,  # Word 1
+        0x12345678,  # Word 2 (Testing RLE compression)
+        0x12345678,  # Word 3
+    ]
+
+    # Pad the rest of the 256 words (8-bit address = 256 slots) with 0
+    sample_instructions.extend([0] * (256 - len(sample_instructions)))
+
+    compiler.add_rom(
         x=20, y=20, 
-        in_d=Wire("W_D_IN", 32), 
-        out_q=Wire("W_REGO", 32), 
-        in_en=Wire("W__EN_", 1), 
-        in_clk=Wire("W__CLK", 1)
+        addr_bits=8, 
+        contents_array=sample_instructions,
+        in_addr=Wire("W_I_AD", 8), 
+        out_data=Wire("W_I_DT", 32), 
+        in_en=Wire("W_I_EN", 1)
     )
 
-    # 2. Add 1 to the Register output
-    compiler.add_arithmetic(
-        peer_type="AdderPeer", 
-        x=20, y=40, 
-        in_a=Wire("W_REGO", 32), 
-        in_b=Wire("W_CNST", 32), 
-        out=Wire("W_ADDO", 32)
+    # 2. Spawn a RAM module (Single Port Data In/Out)
+    compiler.add_ram(
+        x=50, y=20, 
+        addr_bits=8, 
+        in_addr=Wire("W_D_AD", 8), 
+        inout_data=Wire("W_D_DT", 32), 
+        in_clk=Wire("W__CLK", 1), 
+        in_en=Wire("W_D_EN", 1), 
+        in_load=Wire("W__WE_", 1), 
+        in_clr=Wire("W_D_CL", 1)
     )
 
-    # 3. THE SPLITTER TEST
-    # We take the 32-bit output from the Adder and slice it up like an Instruction Decoder!
-    # Opcode (6 bits), RegA (5 bits), RegB (5 bits), Ignored (16 bits)
-    compiler.add_splitter(
-        x=20, y=60, 
-        in_bus=Wire("W_ADDO", 32),
-        out_wires=[
-            Wire("W_OPCD", 6),  # Fanout 0: Gets bits 0-5
-            Wire("W_REGA", 5),  # Fanout 1: Gets bits 6-10
-            Wire("W_REGB", 5),  # Fanout 2: Gets bits 11-15
-            Wire(None, 16)      # Fanout 3: Gets bits 16-31, but drops NO tunnel on canvas!
-        ]
+    compiler.add_buffer(
+        x=70, y=20,
+        a=Wire("W_BAAD", 1),
+        en=Wire("W_ENEN", 1),
+        out=Wire("W_OUTU", 1)
     )
 
     # Save to file
