@@ -129,27 +129,39 @@ class CircuitBuilder:
             self.add_tunnel(x + 3, y + i, "WEST", wire)
 
 
-    def add_ram(self, x: int, y: int, addr_bits: int, in_addr: Wire, inout_data: Wire, 
-                in_clk: Optional[Wire] = None, in_en: Optional[Wire] = None, 
-                in_load: Optional[Wire] = None, in_clr: Optional[Wire] = None):
-        """Standard RAM block (Single Port / Bidirectional Data)"""
+    def add_ram(self, x: int, y: int, addr_bits: int, data_bits: int,
+                in_addr: Wire, in_data: Wire, out_data: Wire, in_clk: Wire,
+                in_en: Wire, in_ld: Wire, in_str: Wire, in_clr: Wire):
+        """Standard RAM block (Separate Load/Store Ports Active)"""
         self._add_raw_component(
             "com.ra4king.circuitsim.gui.peers.memory.RAMPeer", x, y,
             {
-                "Separate Load/Store Ports?": "No",
+                "Separate Load/Store Ports?": "Yes",
                 "Label location": "NORTH",
                 "Label": "",
-                "Bitsize": str(inout_data.bitsize),
+                "Bitsize": str(data_bits),
                 "Address bits": str(addr_bits)
             }
         )
-        self.add_tunnel(x - 6, y + 1, "EAST",  in_addr)
-        self.add_tunnel(x + 9, y + 1, "WEST",  inout_data)
 
+        # Address
+        self.add_tunnel(x - 6, y + 1, "EAST",  in_addr)
+        # D_IN
+        self.add_tunnel(x - 6, y + 3, "EAST",  in_data)
+
+        # D_OUT
+        self.add_tunnel(x + 9, y + 1, "WEST",  out_data)
+
+        # Clock
         self.add_tunnel(x,     y + 5, "NORTH", in_clk)
+        # Enable
         self.add_tunnel(x + 1, y + 5, "NORTH", in_en)
-        self.add_tunnel(x + 2, y + 5, "NORTH", in_load)
-        self.add_tunnel(x + 3, y + 5, "NORTH", in_clr)
+        # LD (Load / Read Enable)
+        self.add_tunnel(x + 2, y + 5, "NORTH", in_ld)
+        # STR (Str / Write Enable)
+        self.add_tunnel(x + 3, y + 5, "NORTH", in_str)
+        # RESET (Reset / Clear)
+        self.add_tunnel(x + 4, y + 5, "NORTH", in_clr)
 
     def add_rom(self, x: int, y: int, addr_bits: int, contents_array: List[int], 
                 in_addr: Wire, out_data: Wire, in_en: Optional[Wire] = None):
@@ -740,28 +752,35 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
             # --- MEMORY & REGISTER FILES ---
             elif c_type in ["$mem", "$mem_v2"]:
                 params = cell_data.get("parameters", {})
-                rd_ports = int(params.get("RD_PORTS", "0"), 2)
                 addr_bits = int(params.get("ABITS", "0"), 2)
                 width = int(params.get("WIDTH", "0"), 2)
 
                 # Fetch the flattened connection arrays
                 rd_addr_flat = conns.get("RD_ADDR", [])
                 rd_data_flat = conns.get("RD_DATA", [])
-                wr_addr_flat = conns.get("WR_ADDR", [])
                 wr_data_flat = conns.get("WR_DATA", [])
 
                 # Extract the 1-bit Write Enable signal from the array
                 wr_en_array = conns.get("WR_EN", [])
-                we_wire = gw([wr_en_array[0]] if wr_en_array else [])
+                rd_en_array = conns.get("RD_EN", [])
+
+
+                str_wire = gw([wr_en_array[0]] if wr_en_array else [])
+                ld_wire = gw([rd_en_array[0]] if rd_en_array else ['1']) # Default LD to 1 if missing
 
                 # Standard Single-Port RAM (Your standard Instruction/Data memory)
                 compiler.add_ram(
-                    x=current_x, y=current_y, addr_bits=addr_bits,
+                    x=current_x, y=current_y,
+                    addr_bits=addr_bits,
+                    data_bits=width,
                     in_addr=gw(rd_addr_flat), 
-                    inout_data=gw(rd_data_flat),
+                    in_data=gw(wr_data_flat),
+                    out_data=gw(rd_data_flat),
                     in_clk=gw(conns.get("WR_CLK", [])),
-                    in_en=gw(conns.get("RD_EN", [])), 
-                    in_load=we_wire
+                    in_en=gw(['1']), # Always Tie Enable to High
+                    in_ld=ld_wire,
+                    in_str=str_wire,
+                    in_clr=gw(['0'])  # Always Tie Reset to Low
                 )
             # --- REGISTERS (D-FLIP-FLOPS) ---
             elif c_type == "$dff":

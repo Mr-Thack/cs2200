@@ -325,7 +325,7 @@
           "x": 50,
           "y": 75,
           "properties": {
-            "Separate Load/Store Ports?": "No",
+            "Separate Load/Store Ports?": "Yes",
             "Label location": "NORTH",
             "Label": "CELL 27",
             "Bitsize": "32",
@@ -341,6 +341,17 @@
             "Direction": "EAST",
             "Width": "4",
             "Bitsize": "16"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 44,
+          "y": 78,
+          "properties": {
+            "Label": "T_0007",
+            "Direction": "EAST",
+            "Width": "4",
+            "Bitsize": "32"
           }
         },
         {
@@ -381,7 +392,29 @@
           "x": 52,
           "y": 80,
           "properties": {
+            "Label": "C_0001",
+            "Direction": "NORTH",
+            "Width": "5",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 53,
+          "y": 80,
+          "properties": {
             "Label": "T_0006",
+            "Direction": "NORTH",
+            "Width": "5",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 54,
+          "y": 80,
+          "properties": {
+            "Label": "C_0000",
             "Direction": "NORTH",
             "Width": "5",
             "Bitsize": "1"
@@ -393,7 +426,7 @@
           "y": 50,
           "properties": {
             "Label location": "NORTH",
-            "Label": "CELL 33",
+            "Label": "CELL 36",
             "Value": "0",
             "Direction": "EAST",
             "Bitsize": "1",
@@ -417,7 +450,7 @@
           "y": 80,
           "properties": {
             "Label location": "NORTH",
-            "Label": "CELL 35",
+            "Label": "CELL 38",
             "Value": "1",
             "Direction": "EAST",
             "Bitsize": "1",
@@ -441,7 +474,7 @@
           "y": 110,
           "properties": {
             "Label location": "NORTH",
-            "Label": "CELL 37",
+            "Label": "CELL 40",
             "Value": "00000000000000000000000000000000",
             "Direction": "EAST",
             "Bitsize": "32",
@@ -465,7 +498,7 @@
           "y": 140,
           "properties": {
             "Label location": "NORTH",
-            "Label": "CELL 39",
+            "Label": "CELL 42",
             "Value": "0000000000000000",
             "Direction": "EAST",
             "Bitsize": "16",
@@ -9315,6 +9348,6 @@
     }
   ],
   "revisionSignatures": [
-    "CTdiNzc2ODg5NWU2MGJkYjNlMmQyNzg4OWEwODZmNjNiNDc5MTUxYzNmODM2YTEzY2EzN2M3Yjc1ZTFiMTc0MmUJMTc3NTQxMzMzNTA2OQk2OWYxNTE4MmQzOWU2MmQ2ZGRhNzMzZTJjNzZjY2I1MDc4YzFjNDY3MzVhN2M2NGQ5YWY5OGU3YWFmMDZiZjc4"
+    "CWE5NGU4YTRkNWQ5NjNlYWM4ZTM0YjRlMDZhZDgyYWMxZDM4OTQzZTJmZDExMjVjMDQ3NDU3OWZlZTQ1ZjQ2NjQJMTc3NTQxNTc2OTkyOAkwN2RlMDM3OTUwMGQyZDNmYzBmZTdjYTEzODAzMWZlYjcxYzI5MzQ3NjIxNzY1ZjFkODdmYWI4ZjQxMGVkYmI1"
   ]
 }
