@@ -1,19 +1,19 @@
 [*]
 [*] GTKWave Analyzer v3.3.126 (w)1999-2026 BSI
-[*] Wed Apr  1 20:25:57 2026
+[*] Sun Apr  5 16:32:17 2026
 [*]
 [dumpfile] "/home/bhaia/Documents/second/cs2200/extra/verilog/waves.vcd"
-[dumpfile_mtime] "Wed Apr  1 20:25:23 2026"
-[dumpfile_size] 1316681
+[dumpfile_mtime] "Sun Apr  5 16:28:45 2026"
+[dumpfile_size] 1314469
 [savefile] "/home/bhaia/Documents/second/cs2200/extra/verilog/layout.gtkw"
-[timestart] 0
+[timestart] 17989
 [size] 1280 720
 [pos] -1 -1
-*-9.473659 1175 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+*-9.473659 19618 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] test.
 [treeopen] test.dut.
 [sst_width] 290
-[signals_width] 322
+[signals_width] 391
 [sst_expanded] 1
 [sst_vpaned_height] 198
 @28
@@ -21,9 +21,7 @@ test.dut.clk
 test.dut.rst
 @24
 test.dut.stat_branches_correct[31:0]
-@25
 test.dut.stat_branches_incorrect[31:0]
-@24
 test.dut.stat_branches_seen[31:0]
 test.dut.stat_cycles[31:0]
 test.dut.stat_flushes[31:0]
@@ -32,33 +30,21 @@ test.dut.stat_stalls[31:0]
 test.dut.stall_now
 test.dut.halt_now
 @22
-test.dut.ins[31:0]
 test.dut.PC[31:0]
-test.dut.instruction_read_line[31:0]
-test.dut.alu_val1[31:0]
-test.dut.alu_val2[31:0]
-test.dut.alu_result[31:0]
-test.dut.debug_dbuf_dr[3:0]
-test.dut.debug_dbuf_offset[31:0]
-test.dut.debug_dbuf_op[3:0]
-test.dut.debug_dbuf_pc[31:0]
-test.dut.debug_dbuf_val1[31:0]
-test.dut.debug_dbuf_val2[31:0]
-test.dut.registers.\registers[0][31:0]
-test.dut.registers.\registers[1][31:0]
-test.dut.registers.\registers[2][31:0]
-test.dut.registers.\registers[3][31:0]
-test.dut.registers.\registers[4][31:0]
-test.dut.registers.\registers[5][31:0]
-test.dut.registers.\registers[6][31:0]
-test.dut.registers.\registers[7][31:0]
-test.dut.registers.\registers[8][31:0]
-test.dut.registers.\registers[9][31:0]
-test.dut.registers.\registers[10][31:0]
-test.dut.registers.\registers[11][31:0]
-test.dut.registers.\registers[12][31:0]
-test.dut.registers.\registers[13][31:0]
-test.dut.registers.\registers[14][31:0]
-test.dut.registers.\registers[15][31:0]
+test.dut.registers.at[31:0]
+test.dut.registers.v0[31:0]
+test.dut.registers.a0[31:0]
+test.dut.registers.a1[31:0]
+test.dut.registers.a2[31:0]
+test.dut.registers.t0[31:0]
+test.dut.registers.t1[31:0]
+test.dut.registers.t2[31:0]
+test.dut.registers.s0[31:0]
+test.dut.registers.s1[31:0]
+test.dut.registers.s2[31:0]
+test.dut.registers.k0[31:0]
+test.dut.registers.sp[31:0]
+test.dut.registers.fp[31:0]
+test.dut.registers.ra[31:0]
 [pattern_trace] 1
 [pattern_trace] 0

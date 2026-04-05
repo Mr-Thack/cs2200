@@ -24,16 +24,24 @@ class CircuitBuilder:
         self.version = version
         self.global_bit_size = 1
         self.clock_speed = 1
-        self.components = []
-        self.wires = []
+
+        self.circuits = {}
+        self.active_circuit = "Main"
+        self.set_active_circuit("Main")
+
+    def set_active_circuit(self, name: str):
+        """Switches the active drawing context to the specified circuit."""
+        self.active_circuit = name
+        if name not in self.circuits:
+            self.circuits[name] = {"components": [], "wires": []}
 
     def _add_raw_component(self, name: str, x: int, y: int, properties: dict):
         """Internal helper to push components to the JSON array."""
         label = properties.get('Label')
         if (label == None or label == ""):
-            properties['Label'] = "CELL " + str(len(self.components))
+            properties['Label'] = "CELL " + str(len(self.circuits[self.active_circuit]["components"]))
 
-        self.components.append({
+        self.circuits[self.active_circuit]["components"].append({
             "name": name,
             "x": x,
             "y": y,
@@ -100,6 +108,25 @@ class CircuitBuilder:
     # ==========================================
     # COMPONENT "BLOCK" GENERATORS
     # ==========================================
+
+    def add_subcircuit(self, x: int, y: int, subcircuit_name: str, in_wires: List[Wire], out_wires: List[Wire]):
+        """Creates a Subcircuit Component and hooks up the input/output tunnels."""
+        self._add_raw_component(
+            "com.ra4king.circuitsim.gui.peers.SubcircuitPeer", x, y,
+            {
+                "Label location": "NORTH",
+                "Label": "",
+                "Subcircuit": subcircuit_name
+            }
+        )
+
+        # Connect input wires (offset to the left side)
+        for i, wire in enumerate(in_wires):
+            self.add_tunnel(x - 7, y + i, "EAST", wire)
+
+        # Connect output wires (offset to the right side)
+        for i, wire in enumerate(out_wires):
+            self.add_tunnel(x + 3, y + i, "WEST", wire)
 
 
     def add_ram(self, x: int, y: int, addr_bits: int, in_addr: Wire, inout_data: Wire, 
@@ -326,7 +353,7 @@ class CircuitBuilder:
         # X Offset: Output pins anchor on the right, so left-port dx is constant (-7).
         # Input pins/Constants anchor on the left, so right-port dx grows with text width.
         if is_output:
-            dx = -7
+            dx = -6
         else:
             dx = 8
 
@@ -401,44 +428,43 @@ class CircuitBuilder:
 
     def _remap_labels(self):
         """
-        Passes over all components and replaces verbose wire labels 
+        Passes over all components in ALL circuits and replaces verbose wire labels 
         with guaranteed 6-character labels (e.g., T_0000, C_0000)
         """
         label_map = {}
         wire_counter = 0
         const_counter = 0
 
-        for comp in self.components:
-            props = comp.get("properties", {})
+        for circ_name, circ_data in self.circuits.items():
+            for comp in circ_data["components"]:
+                props = comp.get("properties", {})
 
-            # Tunnels and Pins use the "Label" property
-            if "Label" in props and props["Label"]:
-                old_label = props["Label"]
+                # Tunnels and Pins use the "Label" property
+                if "Label" in props and props["Label"]:
+                    old_label = props["Label"]
 
-                # Check if it's one of our verbose deterministic labels
-                if old_label.startswith("WIRE_") or old_label.startswith("CONST_") or old_label.startswith("PMUX_"):
-                    if old_label not in label_map:
-                        # Assign a new 6-character label
-                        if old_label.startswith("CONST_"):
-                            label_map[old_label] = f"C_{const_counter:04X}"
-                            const_counter += 1
-                        else:
-                            label_map[old_label] = f"T_{wire_counter:04X}"
-                            wire_counter += 1
-                        print("OLD:", old_label)
-                        print("NEW:", label_map[old_label])
+                    # Fixed prefix check: get_wire outputs W_, not WIRE_
+                    if old_label.startswith(("W_", "CONST_", "PMUX_", "L_AND_")):
+                        if old_label not in label_map:
+                            if old_label.startswith("CONST_"):
+                                label_map[old_label] = f"C_{const_counter:04X}"
+                                const_counter += 1
+                            else:
+                                label_map[old_label] = f"T_{wire_counter:04X}"
+                                wire_counter += 1
 
-                    # Overwrite the property directly in the JSON dictionary
-                    props["Label"] = label_map[old_label]
+                        props["Label"] = label_map[old_label]
 
     def save(self, filename: str):
         self._remap_labels()
 
-        circuits_list = [{
-            "name": "CircuitMain",
-            "components": self.components,
-            "wires": self.wires
-        }]
+        circuits_list = []
+        for name, data in self.circuits.items():
+            circuits_list.append({
+                "name": name,
+                "components": data["components"],
+                "wires": data["wires"]
+            })
 
         signature = self._generate_signature(circuits_list)
 
@@ -450,11 +476,11 @@ class CircuitBuilder:
             "revisionSignatures": [signature]
         }
 
-
         with open(filename, 'w', encoding='utf-8') as f:
             json.dump(final_output, f, indent=2)
 
-        print(f"[*] Success: Compiled {len(self.components)} components to {filename}")
+        total_components = sum(len(c["components"]) for c in self.circuits.values())
+        print(f"[*] Success: Compiled {total_components} components across {len(self.circuits)} circuits to {filename}")
 
 
 # ==========================================
@@ -464,24 +490,28 @@ class CircuitBuilder:
 # Global tracker for constants so we can spawn them at the end
 GLOBAL_CONSTANTS = {}
 
-def get_wire(bits_array, current_module_name: str) -> Wire:
+def get_wire(bits_array, current_module_name: str = "Main") -> Wire:
     bitsize = len(bits_array)
     if bitsize == 0:
         return Wire(None, 0)
+    
+    safe_module_name = current_module_name.split('\\')[-1].replace('$', '')
 
     if isinstance(bits_array[0], str):
         val_str = "".join(str(b) for b in reversed(bits_array)).replace('x', '0')
         val_hex = f"{int(val_str, 2):X}"
         label = f"CONST_VAL_{val_hex}_BITS_{bitsize}"
         wire = Wire(label, bitsize)
-        GLOBAL_CONSTANTS[label] = {"wire": wire, "val": val_str}
+
+        if safe_module_name not in GLOBAL_CONSTANTS:
+            GLOBAL_CONSTANTS[safe_module_name] = {}
+
+        GLOBAL_CONSTANTS[safe_module_name][label] = {"wire": wire, "val": val_str}
         return wire
 
     # Create a unique string out of the exact bit array and module scope
     # e.g., "mem_5_6_7_8"
     bit_str = "_".join(str(b) for b in bits_array)
-    safe_module_name = current_module_name.split('\\')[-1].replace('$', '')
-
     unique_id = f"W_{safe_module_name}_{bit_str}"
 
     return Wire(unique_id, bitsize)
@@ -496,15 +526,42 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
 
     X_SPACING = 25 
     Y_SPACING = 25 
-    X_INIT = 25
-    Y_INIT = 25
+    X_INIT = 50
+    Y_INIT = 50
+    
+    PIN_X_INIT = 25
+    PIN_Y_INIT = 25
+
     X_MAX = 100
 
-    current_x = 25
-    current_y = Y_INIT
-
     for module_name, module_data in netlist.get("modules", {}).items():
+        safe_mod_name = module_name.split('\\')[-1].replace('$', '')
+
+        # Determine if this is the top level module (Fallback to Main)
+        if module_data.get("attributes", {}).get("top", 0) == 1:
+            safe_mod_name = "Main"
+
         print(f"[*] Compiling module: {module_name}")
+
+        compiler.set_active_circuit(safe_mod_name)
+
+        # Helper to wrap get_wire with the current module scope
+        def gw(bits): return get_wire(bits, safe_mod_name)
+    
+
+        current_x = PIN_X_INIT
+        current_y = PIN_Y_INIT
+
+        ports = module_data.get("ports", {})
+        for port_name, port_data in ports.items():
+            is_input = (port_data.get("direction") == "input")
+            wire = gw(port_data.get("bits", []))
+            compiler.add_pin(x=current_x, y=current_y, wire=wire, pin_label=port_name, is_input=is_input)
+            current_y += Y_SPACING
+
+        current_x = X_INIT 
+        current_y = Y_INIT
+        
         cells = module_data.get("cells", {})
 
         for cell_name, cell_data in cells.items():
@@ -512,13 +569,37 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
             conns = cell_data.get("connections", {})
 
             # --- ARITHMETIC ---
-            if c_type in ["$add", "$sub"]:
+            if not c_type.startswith("$"):
+                sub_name = c_type.split('\\')[-1].replace('$', '')
+
+                # Fetch port definitions from the netlist to separate inputs from outputs
+                sub_mod_data = netlist.get("modules", {}).get(c_type, {})
+                sub_ports = sub_mod_data.get("ports", {})
+
+                in_wires = []
+                out_wires = []
+
+                for p_name, p_data in sub_ports.items():
+                    wire = gw(conns.get(p_name, []))
+                    if p_data.get("direction") == "input":
+                        in_wires.append(wire)
+                    elif p_data.get("direction") == "output":
+                        out_wires.append(wire)
+
+                compiler.add_subcircuit(
+                    x=current_x, y=current_y,
+                    subcircuit_name=sub_name,
+                    in_wires=in_wires,
+                    out_wires=out_wires
+                )
+
+            elif c_type in ["$add", "$sub"]:
                 peer = "AdderPeer" if c_type == "$add" else "SubtractorPeer"
                 compiler.add_arithmetic(
                     peer_type=peer, x=current_x, y=current_y,
-                    in_a=get_wire(conns.get("A", [])),
-                    in_b=get_wire(conns.get("B", [])),
-                    out=get_wire(conns.get("Y", []))
+                    in_a=gw(conns.get("A", [])),
+                    in_b=gw(conns.get("B", [])),
+                    out=gw(conns.get("Y", []))
                 )
 
                 # --- LOGIC GATES ---
@@ -526,60 +607,60 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
                 gate = c_type.replace("$", "").capitalize()
                 compiler.add_logic_gate(
                     gate_type=gate, x=current_x, y=current_y,
-                    in_a=get_wire(conns.get("A", [])),
-                    in_b=get_wire(conns.get("B", [])),
-                    out=get_wire(conns.get("Y", []))
+                    in_a=gw(conns.get("A", [])),
+                    in_b=gw(conns.get("B", [])),
+                    out=gw(conns.get("Y", []))
                 )
 
             elif c_type in ["$not"]:
                 compiler.add_not_gate(
                     x=current_x, y=current_y,
-                    in_a=get_wire(conns.get("A", [])),
-                    out=get_wire(conns.get("Y", []))
+                    in_a=gw(conns.get("A", [])),
+                    out=gw(conns.get("Y", []))
                 )
 
                 # --- COMPARATORS ---
             elif c_type == "$eq":
                 compiler.add_comparator(
                     x=current_x, y=current_y,
-                    in_a=get_wire(conns.get("A", [])),
-                    in_b=get_wire(conns.get("B", [])),
-                    out_eq=get_wire(conns.get("Y", []))
+                    in_a=gw(conns.get("A", [])),
+                    in_b=gw(conns.get("B", [])),
+                    out_eq=gw(conns.get("Y", []))
                 )
 
             elif c_type == "$reduce_bool":
-                a_wire = get_wire(conns.get("A", []))
-                zero_bus = get_wire(['0'] * a_wire.bitsize)
+                a_wire = gw(conns.get("A", []))
+                zero_bus = gw(['0'] * a_wire.bitsize)
                 compiler.add_comparator(
                     x=current_x, y=current_y,
                     in_a=a_wire,
                     in_b=zero_bus, # Compare to 0
-                    out_greater=get_wire(conns.get("Y", [])),
+                    out_greater=gw(conns.get("Y", [])),
                     is_unsigned=True
                 )
 
             elif c_type == "$logic_not":
-                a_wire = get_wire(conns.get("A", []))
-                zero_bus = get_wire(['0'] * a_wire.bitsize)
+                a_wire = gw(conns.get("A", []))
+                zero_bus = gw(['0'] * a_wire.bitsize)
 
                 # Logical NOT: Is A exactly equal to 0?
                 compiler.add_comparator(
                     x=current_x, y=current_y,
                     in_a=a_wire,
                     in_b=zero_bus,
-                    out_eq=get_wire(conns.get("Y", []))
+                    out_eq=gw(conns.get("Y", []))
                 )
 
             elif c_type == "$logic_and":
-                a_wire = get_wire(conns.get("A", []))
-                b_wire = get_wire(conns.get("B", []))
-                y_wire = get_wire(conns.get("Y", []))
+                a_wire = gw(conns.get("A", []))
+                b_wire = gw(conns.get("B", []))
+                y_wire = gw(conns.get("Y", []))
 
                 # Intermediate wires
                 a_is_true = Wire(f"L_AND_A_GT0_{current_x}_{current_y}", 1)
                 b_is_true = Wire(f"L_AND_B_GT0_{current_x}_{current_y}", 1)
 
-                zero_bus = get_wire(['0'] * a_wire.bitsize)
+                zero_bus = gw(['0'] * a_wire.bitsize)
 
                 # 1. Compare A > 0 (Unsigned)
                 compiler.add_comparator(
@@ -593,7 +674,7 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
                 current_x += X_SPACING
 
 
-                zero_bus = get_wire(['0'] * b_wire.bitsize)
+                zero_bus = gw(['0'] * b_wire.bitsize)
 
                 # 2. Compare B > 0 (Unsigned)
                 compiler.add_comparator(
@@ -618,17 +699,17 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
             elif c_type == "$mux":
                 compiler.add_mux(
                     x=current_x, y=current_y, sel_bits=1,
-                    in_wires=[get_wire(conns.get("A", [])), get_wire(conns.get("B", []))],
-                    in_sel=get_wire(conns.get("S", [])),
-                    out=get_wire(conns.get("Y", []))
+                    in_wires=[gw(conns.get("A", [])), gw(conns.get("B", []))],
+                    in_sel=gw(conns.get("S", [])),
+                    out=gw(conns.get("Y", []))
                 )
 
             elif c_type == "$pmux":
                 # ONE-HOT CASCADING RESOLVER
-                a_wire = get_wire(conns.get("A", []))
+                a_wire = gw(conns.get("A", []))
                 b_flat = conns.get("B", [])
                 s_flat = conns.get("S", [])
-                out_wire = get_wire(conns.get("Y", []))
+                out_wire = gw(conns.get("Y", []))
                 width = out_wire.bitsize
 
                 current_fallback = a_wire
@@ -637,8 +718,8 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
                     b_chunk = b_flat[i*width : (i+1)*width]
                     s_chunk = [s_flat[i]]
 
-                    b_wire = get_wire(b_chunk)
-                    s_wire = get_wire(s_chunk)
+                    b_wire = gw(b_chunk)
+                    s_wire = gw(s_chunk)
 
                     is_last = (i == len(s_flat) - 1)
                     # Temporary wire connecting this MUX to the next one
@@ -671,49 +752,27 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
 
                 # Extract the 1-bit Write Enable signal from the array
                 wr_en_array = conns.get("WR_EN", [])
-                we_wire = get_wire([wr_en_array[0]] if wr_en_array else [])
+                we_wire = gw([wr_en_array[0]] if wr_en_array else [])
 
-                # If this is a Dual-Read-Port Memory (like the DPRF),
-                # Yosys pasted the two 32-bit data outputs into a single 64-bit array.
-                if rd_ports == 2:
-                    # Slice the flattened arrays using python logic
-                    rd_addr_1 = rd_addr_flat[0 : addr_bits]
-                    rd_addr_2 = rd_addr_flat[addr_bits : addr_bits * 2]
-
-                    rd_data_1 = rd_data_flat[0 : width]
-                    rd_data_2 = rd_data_flat[width : width * 2]
-
-                    # Instantiate Clone 1 (Read Port 1)
-                    compiler.add_ram(
-                        x=current_x, y=current_y, addr_bits=addr_bits,
-                        in_addr=get_wire(rd_addr_1), 
-                        inout_data=get_wire(rd_data_1),
-                        in_clk=get_wire(conns.get("RD_CLK", [])),
-                        in_en=get_wire(conns.get("RD_EN", [])), 
-                        in_load=we_wire
-                    )
-                    current_x += X_SPACING
-
-                    # Instantiate Clone 2 (Read Port 2)
-                    # Write pins tied to the exact same source, so it mirrors Clone 1
-                    compiler.add_ram(
-                        x=current_x, y=current_y, addr_bits=addr_bits,
-                        in_addr=get_wire(rd_addr_2), 
-                        inout_data=get_wire(rd_data_2),
-                        in_clk=get_wire(conns.get("RD_CLK", [])),
-                        in_en=get_wire(conns.get("RD_EN", [])), 
-                        in_load=we_wire
-                    )
-                else:
-                    # Standard Single-Port RAM (Your standard Instruction/Data memory)
-                    compiler.add_ram(
-                        x=current_x, y=current_y, addr_bits=addr_bits,
-                        in_addr=get_wire(rd_addr_flat), 
-                        inout_data=get_wire(rd_data_flat),
-                        in_clk=get_wire(conns.get("RD_CLK", [])),
-                        in_en=get_wire(conns.get("RD_EN", [])), 
-                        in_load=we_wire
-                    )
+                # Standard Single-Port RAM (Your standard Instruction/Data memory)
+                compiler.add_ram(
+                    x=current_x, y=current_y, addr_bits=addr_bits,
+                    in_addr=gw(rd_addr_flat), 
+                    inout_data=gw(rd_data_flat),
+                    in_clk=gw(conns.get("WR_CLK", [])),
+                    in_en=gw(conns.get("RD_EN", [])), 
+                    in_load=we_wire
+                )
+            # --- REGISTERS (D-FLIP-FLOPS) ---
+            elif c_type == "$dff":
+                compiler.add_register(
+                     x=current_x, y=current_y,
+                     in_d=gw(conns.get("D", [])),
+                     out_q=gw(conns.get("Q", [])),
+                     in_clk=gw(conns.get("CLK", [])),
+                     in_en=gw(['1']),  # CircuitSim needs Enable HIGH to write
+                     in_clr=gw(['0'])  # CircuitSim needs Clear LOW to avoid wiping memory
+                )
             else:
                 print(f"[!] Unmapped component: {c_type}")
 
@@ -725,19 +784,24 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
     # ========================================================
     # FINAL STEP: Spawn all Constant values detected by Yosys
     # ========================================================
-    print(f"[*] Spawning {len(GLOBAL_CONSTANTS)} Hardcoded Constants...")
-    const_x = 5
-    const_y = 50
-    for label, const_data in GLOBAL_CONSTANTS.items():
-        compiler.add_constant(
-            x=const_x, y=const_y, 
-            out=const_data["wire"], 
-            value=const_data["val"] 
-        )
-        const_y += 40
-        if const_y > 2000:
-            const_y = 50
-            const_x += 80
+    num_constants = sum(len(sub) for sub in GLOBAL_CONSTANTS)
+    print(f"[*] Spawning {num_constants} Hardcoded Constants...")
+
+    for circ_name, constants_dict in GLOBAL_CONSTANTS.items():
+        if circ_name not in compiler.circuits:
+            print(f"[!] POTENTIAL ERROR: {circ_name} NOT IN CIRCUITS!")
+            continue
+
+        compiler.set_active_circuit(circ_name)
+        const_x = 5
+        const_y = 50
+        for label, const_data in constants_dict.items():
+            compiler.add_constant(
+                x=const_x, y=const_y, 
+                out=const_data["wire"], 
+                value=const_data["val"] 
+            )
+            const_y += 30
 
 
 
