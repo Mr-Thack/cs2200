@@ -12,15 +12,10 @@ module dprf(
     localparam NUM_REG = 16;
 
     // 16 registers, each 32 bits
-    logic [31:0] registers [NUM_REG];
+    (* ram_style = "logic" *) logic [31:0] registers [NUM_REG];
 
     always_ff @(posedge clk) begin
-        if (rst) begin
-            // Clear all registers
-            for (int i = 0; i < NUM_REG; i++) begin
-                registers[i] <= 32'd0;
-            end
-        end else if (we && regno_write != 4'd0) begin
+        if (we && regno_write != 4'd0) begin
             // If Write_Enable and not $zero, write
             registers[regno_write] <= write_data;
         end

@@ -29,6 +29,10 @@ class CircuitBuilder:
 
     def _add_raw_component(self, name: str, x: int, y: int, properties: dict):
         """Internal helper to push components to the JSON array."""
+        label = properties.get('Label')
+        if (label == None or label == ""):
+            properties['Label'] = "CELL " + str(len(self.components))
+
         self.components.append({
             "name": name,
             "x": x,
@@ -112,7 +116,7 @@ class CircuitBuilder:
                 "Address bits": str(addr_bits)
             }
         )
-        self.add_tunnel(x - 7, y + 1, "EAST",  in_addr)
+        self.add_tunnel(x - 6, y + 1, "EAST",  in_addr)
         self.add_tunnel(x + 9, y + 1, "WEST",  inout_data)
 
         self.add_tunnel(x,     y + 5, "NORTH", in_clk)
@@ -155,12 +159,17 @@ class CircuitBuilder:
         self.add_tunnel(x - 1, y - 3, "SOUTH", cin)
         self.add_tunnel(x - 1, y + 4, "NORTH", cout)
 
-    def add_comparator(self, x: int, y: int, in_a: Wire, in_b: Wire, out_less: Optional[Wire] = None, out_eq: Optional[Wire] = None, out_greater: Optional[Wire] = None):
+    def add_comparator(self, x: int, y: int, in_a: Wire, in_b: Wire,
+                       out_less: Optional[Wire] = None,
+                       out_eq: Optional[Wire] = None,
+                       out_greater: Optional[Wire] = None,
+                       is_unsigned: bool = False):
         """Special generator for the Comparator's 3 distinct 1-bit outputs."""
+        comp_type = "Unsigned" if is_unsigned else "2's complement"
         self._add_raw_component(
             "com.ra4king.circuitsim.gui.peers.arithmetic.ComparatorPeer", x, y,
             {
-                "Comparison Type": "2's complement", 
+                "Comparison Type": comp_type, 
                 "Label location": "NORTH", 
                 "Label": "", 
                 "Bitsize": str(in_a.bitsize)
@@ -290,7 +299,7 @@ class CircuitBuilder:
 
         num_inputs = 2 ** sel_bits
         for i, in_w in enumerate(in_wires):
-            self.add_tunnel(x - 7, y + i, "EAST", in_w)
+            self.add_tunnel(x - 6, y + i, "EAST", in_w)
 
         # The output pin is dynamically centered
         self.add_tunnel(x + 3, y + (num_inputs // 2), "WEST", out)
@@ -308,18 +317,23 @@ class CircuitBuilder:
         if bitsize <= 8:
             dy = 0
         elif bitsize <= 16:
-            dy = 1
+            dy = 0
         elif bitsize <= 24:
-            dy = 2
+            dy = 1
         else:
-            dy = 3
+            dy = 2
 
         # X Offset: Output pins anchor on the right, so left-port dx is constant (-7).
         # Input pins/Constants anchor on the left, so right-port dx grows with text width.
         if is_output:
             dx = -7
         else:
-            dx = 2 if bitsize == 1 else 8
+            dx = 8
+
+        if bitsize < 8:
+            dx = dx - 7 + bitsize
+            if bitsize in (2, 3, 4):
+                dx = dx - 1
 
         return dx, dy
 
@@ -411,6 +425,8 @@ class CircuitBuilder:
                         else:
                             label_map[old_label] = f"T_{wire_counter:04X}"
                             wire_counter += 1
+                        print("OLD:", old_label)
+                        print("NEW:", label_map[old_label])
 
                     # Overwrite the property directly in the JSON dictionary
                     props["Label"] = label_map[old_label]
@@ -434,6 +450,7 @@ class CircuitBuilder:
             "revisionSignatures": [signature]
         }
 
+
         with open(filename, 'w', encoding='utf-8') as f:
             json.dump(final_output, f, indent=2)
 
@@ -447,33 +464,27 @@ class CircuitBuilder:
 # Global tracker for constants so we can spawn them at the end
 GLOBAL_CONSTANTS = {}
 
-def get_wire(bits_array) -> Wire:
-    """
-    Generates a properly sized Wire with a verbose, deterministic label.
-    These will be remapped to 6 characters right before saving.
-    """
+def get_wire(bits_array, current_module_name: str) -> Wire:
     bitsize = len(bits_array)
     if bitsize == 0:
         return Wire(None, 0)
 
-    # Check if this is a constant array (strings of '0', '1', 'x')
     if isinstance(bits_array[0], str):
         val_str = "".join(str(b) for b in reversed(bits_array)).replace('x', '0')
         val_hex = f"{int(val_str, 2):X}"
-
-        # Verbose, deterministic constant label
         label = f"CONST_VAL_{val_hex}_BITS_{bitsize}"
         wire = Wire(label, bitsize)
-
-        GLOBAL_CONSTANTS[label] = {"wire": wire, "val": val_hex}
+        GLOBAL_CONSTANTS[label] = {"wire": wire, "val": val_str}
         return wire
 
-    # Find the first actual wire ID to name the bus
-    first_id = next((b for b in bits_array if isinstance(b, int)), None)
-    if first_id is not None:
-        return Wire(f"WIRE_ID_{first_id}", bitsize)
+    # Create a unique string out of the exact bit array and module scope
+    # e.g., "mem_5_6_7_8"
+    bit_str = "_".join(str(b) for b in bits_array)
+    safe_module_name = current_module_name.split('\\')[-1].replace('$', '')
 
-    return Wire(None, 0)
+    unique_id = f"W_{safe_module_name}_{bit_str}"
+
+    return Wire(unique_id, bitsize)
 
 
 def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
@@ -483,9 +494,14 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
     with open(json_file_path, 'r') as f:
         netlist = json.load(f)
 
-    current_x = 50
-    current_y = 50
-    Y_SPACING = 80 
+    X_SPACING = 25 
+    Y_SPACING = 25 
+    X_INIT = 25
+    Y_INIT = 25
+    X_MAX = 100
+
+    current_x = 25
+    current_y = Y_INIT
 
     for module_name, module_data in netlist.get("modules", {}).items():
         print(f"[*] Compiling module: {module_name}")
@@ -506,8 +522,8 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
                 )
 
                 # --- LOGIC GATES ---
-            elif c_type in ["$logic_and", "$and", "$logic_or", "$or", "$logic_xor", "$xor"]:
-                gate = c_type.replace("$", "").replace("logic_", "").capitalize()
+            elif c_type in ["$and", "$or", "$xor"]:
+                gate = c_type.replace("$", "").capitalize()
                 compiler.add_logic_gate(
                     gate_type=gate, x=current_x, y=current_y,
                     in_a=get_wire(conns.get("A", [])),
@@ -515,7 +531,7 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
                     out=get_wire(conns.get("Y", []))
                 )
 
-            elif c_type in ["$logic_not", "$not"]:
+            elif c_type in ["$not"]:
                 compiler.add_not_gate(
                     x=current_x, y=current_y,
                     in_a=get_wire(conns.get("A", [])),
@@ -533,15 +549,70 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
 
             elif c_type == "$reduce_bool":
                 a_wire = get_wire(conns.get("A", []))
+                zero_bus = get_wire(['0'] * a_wire.bitsize)
                 compiler.add_comparator(
                     x=current_x, y=current_y,
                     in_a=a_wire,
-                    in_b=Wire(f"C_0_{a_wire.bitsize}", a_wire.bitsize), # Compare to 0
-                    out_greater=get_wire(conns.get("Y", []))
+                    in_b=zero_bus, # Compare to 0
+                    out_greater=get_wire(conns.get("Y", [])),
+                    is_unsigned=True
                 )
-                GLOBAL_CONSTANTS[f"C_0_{a_wire.bitsize}"] = {
-                    "wire": Wire(f"C_0_{a_wire.bitsize}", a_wire.bitsize), "val": "0"
-                }
+
+            elif c_type == "$logic_not":
+                a_wire = get_wire(conns.get("A", []))
+                zero_bus = get_wire(['0'] * a_wire.bitsize)
+
+                # Logical NOT: Is A exactly equal to 0?
+                compiler.add_comparator(
+                    x=current_x, y=current_y,
+                    in_a=a_wire,
+                    in_b=zero_bus,
+                    out_eq=get_wire(conns.get("Y", []))
+                )
+
+            elif c_type == "$logic_and":
+                a_wire = get_wire(conns.get("A", []))
+                b_wire = get_wire(conns.get("B", []))
+                y_wire = get_wire(conns.get("Y", []))
+
+                # Intermediate wires
+                a_is_true = Wire(f"L_AND_A_GT0_{current_x}_{current_y}", 1)
+                b_is_true = Wire(f"L_AND_B_GT0_{current_x}_{current_y}", 1)
+
+                zero_bus = get_wire(['0'] * a_wire.bitsize)
+
+                # 1. Compare A > 0 (Unsigned)
+                compiler.add_comparator(
+                    x=current_x, y=current_y,
+                    in_a=a_wire,
+                    in_b=zero_bus,
+                    out_greater=a_is_true,
+                    is_unsigned=True
+                )
+
+                current_x += X_SPACING
+
+
+                zero_bus = get_wire(['0'] * b_wire.bitsize)
+
+                # 2. Compare B > 0 (Unsigned)
+                compiler.add_comparator(
+                    x=current_x, y=current_y,
+                    in_a=b_wire,
+                    in_b=zero_bus,
+                    out_greater=b_is_true,
+                    is_unsigned=True
+                )
+
+                current_x += X_SPACING
+
+                # 3. A is True AND B is True
+                compiler.add_logic_gate(
+                    gate_type="And", x=current_x, y=current_y - (Y_SPACING // 2),
+                    in_a=a_is_true,
+                    in_b=b_is_true,
+                    out=y_wire
+                )
 
                 # --- MULTIPLEXERS ---
             elif c_type == "$mux":
@@ -574,46 +645,88 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
                     mux_out = out_wire if is_last else Wire(f"PMUX_TEMP_{i}_{current_x}_{current_y}", width)
 
                     compiler.add_mux(
-                            x=current_x, y=current_y, sel_bits=1,
-                            in_wires=[current_fallback, b_wire],
-                            in_sel=s_wire,
-                            out=mux_out
-                            )
+                        x=current_x, y=current_y, sel_bits=1,
+                        in_wires=[current_fallback, b_wire],
+                        in_sel=s_wire,
+                        out=mux_out
+                    )
                     current_fallback = mux_out
-                    current_y += Y_SPACING
+                    current_x += X_SPACING
+                    if current_x > X_MAX:
+                        current_x = X_INIT
+                        current_y += Y_SPACING
 
-                # --- MEMORY ---
+            # --- MEMORY & REGISTER FILES ---
             elif c_type in ["$mem", "$mem_v2"]:
-                mem_id = cell_data.get("parameters", {}).get("MEMID", "")
-                print(f"[*] Memory Block {mem_id} mapping triggered.")
+                params = cell_data.get("parameters", {})
+                rd_ports = int(params.get("RD_PORTS", "0"), 2)
+                addr_bits = int(params.get("ABITS", "0"), 2)
+                width = int(params.get("WIDTH", "0"), 2)
 
-                # Defaulting to standard RAM logic
-                we_wire_array = conns.get("WR_EN", [])
-                we_wire = get_wire([we_wire_array[0]] if we_wire_array else [])
+                # Fetch the flattened connection arrays
+                rd_addr_flat = conns.get("RD_ADDR", [])
+                rd_data_flat = conns.get("RD_DATA", [])
+                wr_addr_flat = conns.get("WR_ADDR", [])
+                wr_data_flat = conns.get("WR_DATA", [])
 
-                compiler.add_ram(
-                    x=current_x, y=current_y,
-                    addr_bits=len(conns.get("RD_ADDR", [])),
-                    in_addr=get_wire(conns.get("RD_ADDR", [])),
-                    inout_data=get_wire(conns.get("RD_DATA", [])), 
-                    in_clk=get_wire(conns.get("RD_CLK", [])),
-                    in_en=get_wire(conns.get("RD_EN", [])),
-                    in_load=we_wire
-                )
+                # Extract the 1-bit Write Enable signal from the array
+                wr_en_array = conns.get("WR_EN", [])
+                we_wire = get_wire([wr_en_array[0]] if wr_en_array else [])
 
+                # If this is a Dual-Read-Port Memory (like the DPRF),
+                # Yosys pasted the two 32-bit data outputs into a single 64-bit array.
+                if rd_ports == 2:
+                    # Slice the flattened arrays using python logic
+                    rd_addr_1 = rd_addr_flat[0 : addr_bits]
+                    rd_addr_2 = rd_addr_flat[addr_bits : addr_bits * 2]
+
+                    rd_data_1 = rd_data_flat[0 : width]
+                    rd_data_2 = rd_data_flat[width : width * 2]
+
+                    # Instantiate Clone 1 (Read Port 1)
+                    compiler.add_ram(
+                        x=current_x, y=current_y, addr_bits=addr_bits,
+                        in_addr=get_wire(rd_addr_1), 
+                        inout_data=get_wire(rd_data_1),
+                        in_clk=get_wire(conns.get("RD_CLK", [])),
+                        in_en=get_wire(conns.get("RD_EN", [])), 
+                        in_load=we_wire
+                    )
+                    current_x += X_SPACING
+
+                    # Instantiate Clone 2 (Read Port 2)
+                    # Write pins tied to the exact same source, so it mirrors Clone 1
+                    compiler.add_ram(
+                        x=current_x, y=current_y, addr_bits=addr_bits,
+                        in_addr=get_wire(rd_addr_2), 
+                        inout_data=get_wire(rd_data_2),
+                        in_clk=get_wire(conns.get("RD_CLK", [])),
+                        in_en=get_wire(conns.get("RD_EN", [])), 
+                        in_load=we_wire
+                    )
+                else:
+                    # Standard Single-Port RAM (Your standard Instruction/Data memory)
+                    compiler.add_ram(
+                        x=current_x, y=current_y, addr_bits=addr_bits,
+                        in_addr=get_wire(rd_addr_flat), 
+                        inout_data=get_wire(rd_data_flat),
+                        in_clk=get_wire(conns.get("RD_CLK", [])),
+                        in_en=get_wire(conns.get("RD_EN", [])), 
+                        in_load=we_wire
+                    )
             else:
                 print(f"[!] Unmapped component: {c_type}")
 
-            current_y += Y_SPACING
-            if current_y > 2000:
-                current_y = 50
-                current_x += 150
+            current_x += X_SPACING
+            if current_x > X_MAX:
+                current_x = X_INIT
+                current_y += Y_SPACING
 
     # ========================================================
     # FINAL STEP: Spawn all Constant values detected by Yosys
     # ========================================================
     print(f"[*] Spawning {len(GLOBAL_CONSTANTS)} Hardcoded Constants...")
-    const_x = 10
+    const_x = 5
     const_y = 50
     for label, const_data in GLOBAL_CONSTANTS.items():
         compiler.add_constant(
