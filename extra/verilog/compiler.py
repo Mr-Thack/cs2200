@@ -26,8 +26,6 @@ class CircuitBuilder:
         self.clock_speed = 1
 
         self.circuits = {}
-        self.active_circuit = "Main"
-        self.set_active_circuit("Main")
 
     def set_active_circuit(self, name: str):
         """Switches the active drawing context to the specified circuit."""
@@ -251,6 +249,24 @@ class CircuitBuilder:
         )
         self.add_tunnel(x - 6, y, "EAST", in_a)
         self.add_tunnel(x + 3, y, "WEST", out)
+
+    def add_bit_extender(self, x: int, y: int, in_wire: Wire, out_wire: Wire, is_signed: bool = False):
+        """Spawns a Bit Extender component to match CircuitSim's rigid port width rules."""
+        ext_type = "SIGN" if is_signed else "ZERO"
+        # There's also a "ONE" Extension, but I don't think we'll be needing that
+        self._add_raw_component(
+            "com.ra4king.circuitsim.gui.peers.arithmetic.BitExtenderPeer", x, y,
+            {
+                "Label location": "NORTH",
+                "Label": "",
+                "Direction": "EAST",
+                "Input Bitsize": str(in_wire.bitsize),
+                "Output Bitsize": str(out_wire.bitsize),
+                "Extension Type": ext_type
+            }
+        )
+        self.add_tunnel(x - 6, y + 1, "EAST", in_wire)
+        self.add_tunnel(x + 4, y + 1, "WEST", out_wire)
     
     def add_buffer(self, x: int, y: int, in_a: Wire, out: Wire, in_en: Wire):
         """Buffer"""
@@ -533,6 +549,27 @@ def get_wire(bits_array, current_module_name: str = "Main") -> Wire:
 
     return Wire(unique_id, bitsize)
 
+def get_padded_wire(compiler: CircuitBuilder, x: int, y: int, raw_bits: List[int],
+                    target_width: int, current_module: str, is_signed: bool = False) -> Wire:
+    """
+    Checks if a bit array needs padding. If so, physically spawns a Bit Extender 
+    on the canvas to safely bridge the original wire to the required width.
+    """
+    original_wire = get_wire(raw_bits, current_module)
+
+    if original_wire.bitsize >= target_width:
+        return original_wire
+
+    # We need padding. Create a unique target wire for the padded output.
+    padded_label = f"{original_wire.label}_EXT_{target_width}"
+    padded_wire = Wire(padded_label, target_width)
+
+    # Instruct the compiler to build the physical bridging component
+    compiler.add_bit_extender(x, y, original_wire, padded_wire, is_signed)
+
+    print(f"Adding Padding for {original_wire.label} to {padded_wire.label}")
+
+    return padded_wire
 
 def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
     """
@@ -611,22 +648,30 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
                 )
 
             elif c_type in ["$add", "$sub"]:
+                out_wire = gw(conns.get("Y", []))
+                target_width = out_wire.bitsize
+                
+                a_wire = get_padded_wire(compiler, current_x, current_y - 10, conns.get("A", []), target_width, safe_mod_name)
+                b_wire = get_padded_wire(compiler, current_x, current_y + 10, conns.get("B", []), target_width, safe_mod_name)
+
                 peer = "AdderPeer" if c_type == "$add" else "SubtractorPeer"
                 compiler.add_arithmetic(
                     peer_type=peer, x=current_x, y=current_y,
-                    in_a=gw(conns.get("A", [])),
-                    in_b=gw(conns.get("B", [])),
-                    out=gw(conns.get("Y", []))
+                    in_a=a_wire, in_b=b_wire, out=out_wire
                 )
 
                 # --- LOGIC GATES ---
             elif c_type in ["$and", "$or", "$xor"]:
+                out_wire = gw(conns.get("Y", []))
+                target_width = out_wire.bitsize
+
+                a_wire = get_padded_wire(compiler, current_x, current_y - 10, conns.get("A", []), target_width, safe_mod_name)
+                b_wire = get_padded_wire(compiler, current_x, current_y + 10, conns.get("B", []), target_width, safe_mod_name)
+
                 gate = c_type.replace("$", "").capitalize()
                 compiler.add_logic_gate(
                     gate_type=gate, x=current_x, y=current_y,
-                    in_a=gw(conns.get("A", [])),
-                    in_b=gw(conns.get("B", [])),
-                    out=gw(conns.get("Y", []))
+                    in_a=a_wire, in_b=b_wire, out=out_wire
                 )
 
             elif c_type in ["$not"]:
@@ -638,11 +683,19 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
 
                 # --- COMPARATORS ---
             elif c_type == "$eq":
+                out_wire = gw(conns.get("Y", []))
+
+                a_raw = conns.get("A", []) 
+                b_raw = conns.get("B", []) 
+
+                target_width = max(len(a_raw), len(b_raw))
+                
+                a_wire = get_padded_wire(compiler, current_x, current_y - 10, a_raw, target_width, safe_mod_name)
+                b_wire = get_padded_wire(compiler, current_x, current_y + 10, b_raw, target_width, safe_mod_name)
+
                 compiler.add_comparator(
                     x=current_x, y=current_y,
-                    in_a=gw(conns.get("A", [])),
-                    in_b=gw(conns.get("B", [])),
-                    out_eq=gw(conns.get("Y", []))
+                    in_a=a_wire, in_b=b_wire, out_eq=out_wire
                 )
 
             elif c_type == "$reduce_bool":

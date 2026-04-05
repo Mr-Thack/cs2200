@@ -4,11 +4,6 @@
   "clockSpeed": 1,
   "circuits": [
     {
-      "name": "Main",
-      "components": [],
-      "wires": []
-    },
-    {
       "name": "mem",
       "components": [
         {
@@ -615,12 +610,47 @@
           }
         },
         {
+          "name": "com.ra4king.circuitsim.gui.peers.arithmetic.BitExtenderPeer",
+          "x": 50,
+          "y": 60,
+          "properties": {
+            "Label location": "NORTH",
+            "Label": "CELL 8",
+            "Direction": "EAST",
+            "Input Bitsize": "1",
+            "Output Bitsize": "32",
+            "Extension Type": "ZERO"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 44,
+          "y": 61,
+          "properties": {
+            "Label": "C_0001",
+            "Direction": "EAST",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 54,
+          "y": 61,
+          "properties": {
+            "Label": "C_0004",
+            "Direction": "WEST",
+            "Width": "4",
+            "Bitsize": "32"
+          }
+        },
+        {
           "name": "com.ra4king.circuitsim.gui.peers.arithmetic.AdderPeer",
           "x": 50,
           "y": 50,
           "properties": {
             "Label location": "NORTH",
-            "Label": "CELL 8",
+            "Label": "CELL 11",
             "Bitsize": "32"
           }
         },
@@ -640,10 +670,10 @@
           "x": 44,
           "y": 52,
           "properties": {
-            "Label": "C_0001",
+            "Label": "C_0004",
             "Direction": "EAST",
             "Width": "4",
-            "Bitsize": "1"
+            "Bitsize": "32"
           }
         },
         {
@@ -663,7 +693,7 @@
           "y": 50,
           "properties": {
             "Label location": "NORTH",
-            "Label": "CELL 12",
+            "Label": "CELL 15",
             "Bitsize": "32"
           }
         },
@@ -709,7 +739,7 @@
             "Negate 1": "No",
             "Number of Inputs": "2",
             "Label location": "NORTH",
-            "Label": "CELL 16",
+            "Label": "CELL 19",
             "Direction": "EAST",
             "Bitsize": "32"
           }
@@ -753,7 +783,7 @@
           "y": 75,
           "properties": {
             "Label location": "NORTH",
-            "Label": "CELL 20",
+            "Label": "CELL 23",
             "Direction": "EAST",
             "Bitsize": "32"
           }
@@ -788,7 +818,7 @@
             "Selector location": "Right/Down",
             "Label location": "NORTH",
             "Selector bits": "1",
-            "Label": "CELL 23",
+            "Label": "CELL 26",
             "Direction": "EAST",
             "Bitsize": "32"
           }
@@ -845,7 +875,7 @@
             "Selector location": "Right/Down",
             "Label location": "NORTH",
             "Selector bits": "1",
-            "Label": "CELL 28",
+            "Label": "CELL 31",
             "Direction": "EAST",
             "Bitsize": "32"
           }
@@ -902,7 +932,7 @@
             "Selector location": "Right/Down",
             "Label location": "NORTH",
             "Selector bits": "1",
-            "Label": "CELL 33",
+            "Label": "CELL 36",
             "Direction": "EAST",
             "Bitsize": "32"
           }
@@ -959,7 +989,7 @@
             "Selector location": "Right/Down",
             "Label location": "NORTH",
             "Selector bits": "1",
-            "Label": "CELL 38",
+            "Label": "CELL 41",
             "Direction": "EAST",
             "Bitsize": "32"
           }
@@ -1016,7 +1046,7 @@
             "Selector location": "Right/Down",
             "Label location": "NORTH",
             "Selector bits": "1",
-            "Label": "CELL 43",
+            "Label": "CELL 46",
             "Direction": "EAST",
             "Bitsize": "32"
           }
@@ -1073,7 +1103,7 @@
             "Selector location": "Right/Down",
             "Label location": "NORTH",
             "Selector bits": "1",
-            "Label": "CELL 48",
+            "Label": "CELL 51",
             "Direction": "EAST",
             "Bitsize": "32"
           }
@@ -1129,7 +1159,7 @@
           "properties": {
             "Comparison Type": "2's complement",
             "Label location": "NORTH",
-            "Label": "CELL 53",
+            "Label": "CELL 56",
             "Bitsize": "3"
           }
         },
@@ -1149,7 +1179,7 @@
           "x": 94,
           "y": 127,
           "properties": {
-            "Label": "C_0004",
+            "Label": "C_0005",
             "Direction": "EAST",
             "Width": "4",
             "Bitsize": "3"
@@ -1173,7 +1203,7 @@
           "properties": {
             "Comparison Type": "2's complement",
             "Label location": "NORTH",
-            "Label": "CELL 57",
+            "Label": "CELL 60",
             "Bitsize": "3"
           }
         },
@@ -1193,7 +1223,7 @@
           "x": 44,
           "y": 152,
           "properties": {
-            "Label": "C_0005",
+            "Label": "C_0006",
             "Direction": "EAST",
             "Width": "4",
             "Bitsize": "3"
@@ -1211,13 +1241,48 @@
           }
         },
         {
+          "name": "com.ra4king.circuitsim.gui.peers.arithmetic.BitExtenderPeer",
+          "x": 75,
+          "y": 160,
+          "properties": {
+            "Label location": "NORTH",
+            "Label": "CELL 64",
+            "Direction": "EAST",
+            "Input Bitsize": "2",
+            "Output Bitsize": "3",
+            "Extension Type": "ZERO"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 69,
+          "y": 161,
+          "properties": {
+            "Label": "C_0007",
+            "Direction": "EAST",
+            "Width": "4",
+            "Bitsize": "2"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 79,
+          "y": 161,
+          "properties": {
+            "Label": "C_0008",
+            "Direction": "WEST",
+            "Width": "4",
+            "Bitsize": "3"
+          }
+        },
+        {
           "name": "com.ra4king.circuitsim.gui.peers.arithmetic.ComparatorPeer",
           "x": 75,
           "y": 150,
           "properties": {
             "Comparison Type": "2's complement",
             "Label location": "NORTH",
-            "Label": "CELL 61",
+            "Label": "CELL 67",
             "Bitsize": "3"
           }
         },
@@ -1237,10 +1302,10 @@
           "x": 69,
           "y": 152,
           "properties": {
-            "Label": "C_0006",
+            "Label": "C_0008",
             "Direction": "EAST",
             "Width": "4",
-            "Bitsize": "2"
+            "Bitsize": "3"
           }
         },
         {
@@ -1255,13 +1320,48 @@
           }
         },
         {
+          "name": "com.ra4king.circuitsim.gui.peers.arithmetic.BitExtenderPeer",
+          "x": 100,
+          "y": 160,
+          "properties": {
+            "Label location": "NORTH",
+            "Label": "CELL 71",
+            "Direction": "EAST",
+            "Input Bitsize": "2",
+            "Output Bitsize": "3",
+            "Extension Type": "ZERO"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 94,
+          "y": 161,
+          "properties": {
+            "Label": "C_0009",
+            "Direction": "EAST",
+            "Width": "4",
+            "Bitsize": "2"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 104,
+          "y": 161,
+          "properties": {
+            "Label": "C_000A",
+            "Direction": "WEST",
+            "Width": "4",
+            "Bitsize": "3"
+          }
+        },
+        {
           "name": "com.ra4king.circuitsim.gui.peers.arithmetic.ComparatorPeer",
           "x": 100,
           "y": 150,
           "properties": {
             "Comparison Type": "2's complement",
             "Label location": "NORTH",
-            "Label": "CELL 65",
+            "Label": "CELL 74",
             "Bitsize": "3"
           }
         },
@@ -1281,10 +1381,10 @@
           "x": 94,
           "y": 152,
           "properties": {
-            "Label": "C_0007",
+            "Label": "C_000A",
             "Direction": "EAST",
             "Width": "4",
-            "Bitsize": "2"
+            "Bitsize": "3"
           }
         },
         {
@@ -1299,13 +1399,48 @@
           }
         },
         {
+          "name": "com.ra4king.circuitsim.gui.peers.arithmetic.BitExtenderPeer",
+          "x": 50,
+          "y": 185,
+          "properties": {
+            "Label location": "NORTH",
+            "Label": "CELL 78",
+            "Direction": "EAST",
+            "Input Bitsize": "1",
+            "Output Bitsize": "3",
+            "Extension Type": "ZERO"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 44,
+          "y": 186,
+          "properties": {
+            "Label": "C_0001",
+            "Direction": "EAST",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 54,
+          "y": 186,
+          "properties": {
+            "Label": "C_000B",
+            "Direction": "WEST",
+            "Width": "4",
+            "Bitsize": "3"
+          }
+        },
+        {
           "name": "com.ra4king.circuitsim.gui.peers.arithmetic.ComparatorPeer",
           "x": 50,
           "y": 175,
           "properties": {
             "Comparison Type": "2's complement",
             "Label location": "NORTH",
-            "Label": "CELL 69",
+            "Label": "CELL 81",
             "Bitsize": "3"
           }
         },
@@ -1325,10 +1460,10 @@
           "x": 44,
           "y": 177,
           "properties": {
-            "Label": "C_0001",
+            "Label": "C_000B",
             "Direction": "EAST",
             "Width": "4",
-            "Bitsize": "1"
+            "Bitsize": "3"
           }
         },
         {
@@ -1349,7 +1484,7 @@
           "properties": {
             "Comparison Type": "2's complement",
             "Label location": "NORTH",
-            "Label": "CELL 73",
+            "Label": "CELL 85",
             "Bitsize": "3"
           }
         },
@@ -1369,7 +1504,7 @@
           "x": 69,
           "y": 177,
           "properties": {
-            "Label": "C_0008",
+            "Label": "C_000C",
             "Direction": "EAST",
             "Width": "4",
             "Bitsize": "3"
@@ -1392,7 +1527,7 @@
           "y": 175,
           "properties": {
             "Label location": "NORTH",
-            "Label": "CELL 77",
+            "Label": "CELL 89",
             "Bitsize": "32"
           }
         },
@@ -1435,7 +1570,7 @@
           "y": 50,
           "properties": {
             "Label location": "NORTH",
-            "Label": "CELL 81",
+            "Label": "CELL 93",
             "Value": "1",
             "Direction": "EAST",
             "Bitsize": "1",
@@ -1459,7 +1594,7 @@
           "y": 80,
           "properties": {
             "Label location": "NORTH",
-            "Label": "CELL 83",
+            "Label": "CELL 95",
             "Value": "00000000000000000000000000000000",
             "Direction": "EAST",
             "Bitsize": "32",
@@ -1483,7 +1618,7 @@
           "y": 110,
           "properties": {
             "Label location": "NORTH",
-            "Label": "CELL 85",
+            "Label": "CELL 97",
             "Value": "101",
             "Direction": "EAST",
             "Bitsize": "3",
@@ -1495,7 +1630,7 @@
           "x": 8,
           "y": 110,
           "properties": {
-            "Label": "C_0004",
+            "Label": "C_0005",
             "Direction": "WEST",
             "Width": "4",
             "Bitsize": "3"
@@ -1507,7 +1642,7 @@
           "y": 140,
           "properties": {
             "Label location": "NORTH",
-            "Label": "CELL 87",
+            "Label": "CELL 99",
             "Value": "100",
             "Direction": "EAST",
             "Bitsize": "3",
@@ -1519,7 +1654,7 @@
           "x": 8,
           "y": 140,
           "properties": {
-            "Label": "C_0005",
+            "Label": "C_0006",
             "Direction": "WEST",
             "Width": "4",
             "Bitsize": "3"
@@ -1531,7 +1666,7 @@
           "y": 170,
           "properties": {
             "Label location": "NORTH",
-            "Label": "CELL 89",
+            "Label": "CELL 101",
             "Value": "11",
             "Direction": "EAST",
             "Bitsize": "2",
@@ -1543,7 +1678,7 @@
           "x": 7,
           "y": 170,
           "properties": {
-            "Label": "C_0006",
+            "Label": "C_0007",
             "Direction": "WEST",
             "Width": "4",
             "Bitsize": "2"
@@ -1555,7 +1690,7 @@
           "y": 200,
           "properties": {
             "Label location": "NORTH",
-            "Label": "CELL 91",
+            "Label": "CELL 103",
             "Value": "10",
             "Direction": "EAST",
             "Bitsize": "2",
@@ -1567,7 +1702,7 @@
           "x": 7,
           "y": 200,
           "properties": {
-            "Label": "C_0007",
+            "Label": "C_0009",
             "Direction": "WEST",
             "Width": "4",
             "Bitsize": "2"
@@ -1579,7 +1714,7 @@
           "y": 230,
           "properties": {
             "Label location": "NORTH",
-            "Label": "CELL 93",
+            "Label": "CELL 105",
             "Value": "000",
             "Direction": "EAST",
             "Bitsize": "3",
@@ -1591,7 +1726,7 @@
           "x": 8,
           "y": 230,
           "properties": {
-            "Label": "C_0008",
+            "Label": "C_000C",
             "Direction": "WEST",
             "Width": "4",
             "Bitsize": "3"
@@ -1837,7 +1972,7 @@
           "x": 44,
           "y": 52,
           "properties": {
-            "Label": "C_0009",
+            "Label": "C_000D",
             "Direction": "EAST",
             "Width": "4",
             "Bitsize": "4"
@@ -1925,7 +2060,7 @@
           "x": 94,
           "y": 52,
           "properties": {
-            "Label": "C_0009",
+            "Label": "C_000D",
             "Direction": "EAST",
             "Width": "4",
             "Bitsize": "4"
@@ -4113,7 +4248,7 @@
           "x": 69,
           "y": 377,
           "properties": {
-            "Label": "C_000A",
+            "Label": "C_000E",
             "Direction": "EAST",
             "Width": "4",
             "Bitsize": "4"
@@ -4157,7 +4292,7 @@
           "x": 94,
           "y": 377,
           "properties": {
-            "Label": "C_000B",
+            "Label": "C_000F",
             "Direction": "EAST",
             "Width": "4",
             "Bitsize": "4"
@@ -4201,7 +4336,7 @@
           "x": 44,
           "y": 402,
           "properties": {
-            "Label": "C_000C",
+            "Label": "C_0010",
             "Direction": "EAST",
             "Width": "4",
             "Bitsize": "4"
@@ -4245,7 +4380,7 @@
           "x": 69,
           "y": 402,
           "properties": {
-            "Label": "C_000D",
+            "Label": "C_0011",
             "Direction": "EAST",
             "Width": "4",
             "Bitsize": "4"
@@ -4289,7 +4424,7 @@
           "x": 94,
           "y": 402,
           "properties": {
-            "Label": "C_000E",
+            "Label": "C_0012",
             "Direction": "EAST",
             "Width": "4",
             "Bitsize": "4"
@@ -4333,7 +4468,7 @@
           "x": 44,
           "y": 427,
           "properties": {
-            "Label": "C_000F",
+            "Label": "C_0013",
             "Direction": "EAST",
             "Width": "4",
             "Bitsize": "4"
@@ -4377,7 +4512,7 @@
           "x": 69,
           "y": 427,
           "properties": {
-            "Label": "C_0010",
+            "Label": "C_0014",
             "Direction": "EAST",
             "Width": "4",
             "Bitsize": "4"
@@ -4421,7 +4556,7 @@
           "x": 94,
           "y": 427,
           "properties": {
-            "Label": "C_0011",
+            "Label": "C_0015",
             "Direction": "EAST",
             "Width": "4",
             "Bitsize": "4"
@@ -4439,13 +4574,48 @@
           }
         },
         {
+          "name": "com.ra4king.circuitsim.gui.peers.arithmetic.BitExtenderPeer",
+          "x": 50,
+          "y": 460,
+          "properties": {
+            "Label location": "NORTH",
+            "Label": "CELL 255",
+            "Direction": "EAST",
+            "Input Bitsize": "3",
+            "Output Bitsize": "4",
+            "Extension Type": "ZERO"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 44,
+          "y": 461,
+          "properties": {
+            "Label": "C_0016",
+            "Direction": "EAST",
+            "Width": "4",
+            "Bitsize": "3"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 54,
+          "y": 461,
+          "properties": {
+            "Label": "C_0017",
+            "Direction": "WEST",
+            "Width": "4",
+            "Bitsize": "4"
+          }
+        },
+        {
           "name": "com.ra4king.circuitsim.gui.peers.arithmetic.ComparatorPeer",
           "x": 50,
           "y": 450,
           "properties": {
             "Comparison Type": "2's complement",
             "Label location": "NORTH",
-            "Label": "CELL 255",
+            "Label": "CELL 258",
             "Bitsize": "4"
           }
         },
@@ -4465,10 +4635,10 @@
           "x": 44,
           "y": 452,
           "properties": {
-            "Label": "C_0012",
+            "Label": "C_0017",
             "Direction": "EAST",
             "Width": "4",
-            "Bitsize": "3"
+            "Bitsize": "4"
           }
         },
         {
@@ -4483,13 +4653,48 @@
           }
         },
         {
+          "name": "com.ra4king.circuitsim.gui.peers.arithmetic.BitExtenderPeer",
+          "x": 75,
+          "y": 460,
+          "properties": {
+            "Label location": "NORTH",
+            "Label": "CELL 262",
+            "Direction": "EAST",
+            "Input Bitsize": "3",
+            "Output Bitsize": "4",
+            "Extension Type": "ZERO"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 69,
+          "y": 461,
+          "properties": {
+            "Label": "C_0018",
+            "Direction": "EAST",
+            "Width": "4",
+            "Bitsize": "3"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 79,
+          "y": 461,
+          "properties": {
+            "Label": "C_0019",
+            "Direction": "WEST",
+            "Width": "4",
+            "Bitsize": "4"
+          }
+        },
+        {
           "name": "com.ra4king.circuitsim.gui.peers.arithmetic.ComparatorPeer",
           "x": 75,
           "y": 450,
           "properties": {
             "Comparison Type": "2's complement",
             "Label location": "NORTH",
-            "Label": "CELL 259",
+            "Label": "CELL 265",
             "Bitsize": "4"
           }
         },
@@ -4509,10 +4714,10 @@
           "x": 69,
           "y": 452,
           "properties": {
-            "Label": "C_0013",
+            "Label": "C_0019",
             "Direction": "EAST",
             "Width": "4",
-            "Bitsize": "3"
+            "Bitsize": "4"
           }
         },
         {
@@ -4527,13 +4732,48 @@
           }
         },
         {
+          "name": "com.ra4king.circuitsim.gui.peers.arithmetic.BitExtenderPeer",
+          "x": 100,
+          "y": 460,
+          "properties": {
+            "Label location": "NORTH",
+            "Label": "CELL 269",
+            "Direction": "EAST",
+            "Input Bitsize": "3",
+            "Output Bitsize": "4",
+            "Extension Type": "ZERO"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 94,
+          "y": 461,
+          "properties": {
+            "Label": "C_0005",
+            "Direction": "EAST",
+            "Width": "4",
+            "Bitsize": "3"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 104,
+          "y": 461,
+          "properties": {
+            "Label": "C_001A",
+            "Direction": "WEST",
+            "Width": "4",
+            "Bitsize": "4"
+          }
+        },
+        {
           "name": "com.ra4king.circuitsim.gui.peers.arithmetic.ComparatorPeer",
           "x": 100,
           "y": 450,
           "properties": {
             "Comparison Type": "2's complement",
             "Label location": "NORTH",
-            "Label": "CELL 263",
+            "Label": "CELL 272",
             "Bitsize": "4"
           }
         },
@@ -4553,10 +4793,10 @@
           "x": 94,
           "y": 452,
           "properties": {
-            "Label": "C_0004",
+            "Label": "C_001A",
             "Direction": "EAST",
             "Width": "4",
-            "Bitsize": "3"
+            "Bitsize": "4"
           }
         },
         {
@@ -4571,13 +4811,48 @@
           }
         },
         {
+          "name": "com.ra4king.circuitsim.gui.peers.arithmetic.BitExtenderPeer",
+          "x": 50,
+          "y": 485,
+          "properties": {
+            "Label location": "NORTH",
+            "Label": "CELL 276",
+            "Direction": "EAST",
+            "Input Bitsize": "3",
+            "Output Bitsize": "4",
+            "Extension Type": "ZERO"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 44,
+          "y": 486,
+          "properties": {
+            "Label": "C_0006",
+            "Direction": "EAST",
+            "Width": "4",
+            "Bitsize": "3"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 54,
+          "y": 486,
+          "properties": {
+            "Label": "C_001B",
+            "Direction": "WEST",
+            "Width": "4",
+            "Bitsize": "4"
+          }
+        },
+        {
           "name": "com.ra4king.circuitsim.gui.peers.arithmetic.ComparatorPeer",
           "x": 50,
           "y": 475,
           "properties": {
             "Comparison Type": "2's complement",
             "Label location": "NORTH",
-            "Label": "CELL 267",
+            "Label": "CELL 279",
             "Bitsize": "4"
           }
         },
@@ -4597,10 +4872,10 @@
           "x": 44,
           "y": 477,
           "properties": {
-            "Label": "C_0005",
+            "Label": "C_001B",
             "Direction": "EAST",
             "Width": "4",
-            "Bitsize": "3"
+            "Bitsize": "4"
           }
         },
         {
@@ -4615,13 +4890,48 @@
           }
         },
         {
+          "name": "com.ra4king.circuitsim.gui.peers.arithmetic.BitExtenderPeer",
+          "x": 75,
+          "y": 485,
+          "properties": {
+            "Label location": "NORTH",
+            "Label": "CELL 283",
+            "Direction": "EAST",
+            "Input Bitsize": "2",
+            "Output Bitsize": "4",
+            "Extension Type": "ZERO"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 69,
+          "y": 486,
+          "properties": {
+            "Label": "C_0007",
+            "Direction": "EAST",
+            "Width": "4",
+            "Bitsize": "2"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 79,
+          "y": 486,
+          "properties": {
+            "Label": "C_001C",
+            "Direction": "WEST",
+            "Width": "4",
+            "Bitsize": "4"
+          }
+        },
+        {
           "name": "com.ra4king.circuitsim.gui.peers.arithmetic.ComparatorPeer",
           "x": 75,
           "y": 475,
           "properties": {
             "Comparison Type": "2's complement",
             "Label location": "NORTH",
-            "Label": "CELL 271",
+            "Label": "CELL 286",
             "Bitsize": "4"
           }
         },
@@ -4641,10 +4951,10 @@
           "x": 69,
           "y": 477,
           "properties": {
-            "Label": "C_0006",
+            "Label": "C_001C",
             "Direction": "EAST",
             "Width": "4",
-            "Bitsize": "2"
+            "Bitsize": "4"
           }
         },
         {
@@ -4659,13 +4969,48 @@
           }
         },
         {
+          "name": "com.ra4king.circuitsim.gui.peers.arithmetic.BitExtenderPeer",
+          "x": 100,
+          "y": 485,
+          "properties": {
+            "Label location": "NORTH",
+            "Label": "CELL 290",
+            "Direction": "EAST",
+            "Input Bitsize": "2",
+            "Output Bitsize": "4",
+            "Extension Type": "ZERO"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 94,
+          "y": 486,
+          "properties": {
+            "Label": "C_0009",
+            "Direction": "EAST",
+            "Width": "4",
+            "Bitsize": "2"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 104,
+          "y": 486,
+          "properties": {
+            "Label": "C_001D",
+            "Direction": "WEST",
+            "Width": "4",
+            "Bitsize": "4"
+          }
+        },
+        {
           "name": "com.ra4king.circuitsim.gui.peers.arithmetic.ComparatorPeer",
           "x": 100,
           "y": 475,
           "properties": {
             "Comparison Type": "2's complement",
             "Label location": "NORTH",
-            "Label": "CELL 275",
+            "Label": "CELL 293",
             "Bitsize": "4"
           }
         },
@@ -4685,10 +5030,10 @@
           "x": 94,
           "y": 477,
           "properties": {
-            "Label": "C_0007",
+            "Label": "C_001D",
             "Direction": "EAST",
             "Width": "4",
-            "Bitsize": "2"
+            "Bitsize": "4"
           }
         },
         {
@@ -4703,13 +5048,48 @@
           }
         },
         {
+          "name": "com.ra4king.circuitsim.gui.peers.arithmetic.BitExtenderPeer",
+          "x": 50,
+          "y": 510,
+          "properties": {
+            "Label location": "NORTH",
+            "Label": "CELL 297",
+            "Direction": "EAST",
+            "Input Bitsize": "1",
+            "Output Bitsize": "4",
+            "Extension Type": "ZERO"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 44,
+          "y": 511,
+          "properties": {
+            "Label": "C_0001",
+            "Direction": "EAST",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 54,
+          "y": 511,
+          "properties": {
+            "Label": "C_001E",
+            "Direction": "WEST",
+            "Width": "4",
+            "Bitsize": "4"
+          }
+        },
+        {
           "name": "com.ra4king.circuitsim.gui.peers.arithmetic.ComparatorPeer",
           "x": 50,
           "y": 500,
           "properties": {
             "Comparison Type": "2's complement",
             "Label location": "NORTH",
-            "Label": "CELL 279",
+            "Label": "CELL 300",
             "Bitsize": "4"
           }
         },
@@ -4729,10 +5109,10 @@
           "x": 44,
           "y": 502,
           "properties": {
-            "Label": "C_0001",
+            "Label": "C_001E",
             "Direction": "EAST",
             "Width": "4",
-            "Bitsize": "1"
+            "Bitsize": "4"
           }
         },
         {
@@ -4754,7 +5134,7 @@
             "Selector location": "Right/Down",
             "Label location": "NORTH",
             "Selector bits": "1",
-            "Label": "CELL 283",
+            "Label": "CELL 304",
             "Direction": "EAST",
             "Bitsize": "32"
           }
@@ -4811,7 +5191,7 @@
             "Selector location": "Right/Down",
             "Label location": "NORTH",
             "Selector bits": "1",
-            "Label": "CELL 288",
+            "Label": "CELL 309",
             "Direction": "EAST",
             "Bitsize": "32"
           }
@@ -4868,7 +5248,7 @@
             "Selector location": "Right/Down",
             "Label location": "NORTH",
             "Selector bits": "1",
-            "Label": "CELL 293",
+            "Label": "CELL 314",
             "Direction": "EAST",
             "Bitsize": "32"
           }
@@ -4925,7 +5305,7 @@
             "Selector location": "Right/Down",
             "Label location": "NORTH",
             "Selector bits": "1",
-            "Label": "CELL 298",
+            "Label": "CELL 319",
             "Direction": "EAST",
             "Bitsize": "32"
           }
@@ -4982,7 +5362,7 @@
             "Selector location": "Right/Down",
             "Label location": "NORTH",
             "Selector bits": "1",
-            "Label": "CELL 303",
+            "Label": "CELL 324",
             "Direction": "EAST",
             "Bitsize": "32"
           }
@@ -5039,7 +5419,7 @@
             "Selector location": "Right/Down",
             "Label location": "NORTH",
             "Selector bits": "1",
-            "Label": "CELL 308",
+            "Label": "CELL 329",
             "Direction": "EAST",
             "Bitsize": "32"
           }
@@ -5096,7 +5476,7 @@
             "Selector location": "Right/Down",
             "Label location": "NORTH",
             "Selector bits": "1",
-            "Label": "CELL 313",
+            "Label": "CELL 334",
             "Direction": "EAST",
             "Bitsize": "32"
           }
@@ -5153,7 +5533,7 @@
             "Selector location": "Right/Down",
             "Label location": "NORTH",
             "Selector bits": "1",
-            "Label": "CELL 318",
+            "Label": "CELL 339",
             "Direction": "EAST",
             "Bitsize": "32"
           }
@@ -5210,7 +5590,7 @@
             "Selector location": "Right/Down",
             "Label location": "NORTH",
             "Selector bits": "1",
-            "Label": "CELL 323",
+            "Label": "CELL 344",
             "Direction": "EAST",
             "Bitsize": "32"
           }
@@ -5267,7 +5647,7 @@
             "Selector location": "Right/Down",
             "Label location": "NORTH",
             "Selector bits": "1",
-            "Label": "CELL 328",
+            "Label": "CELL 349",
             "Direction": "EAST",
             "Bitsize": "32"
           }
@@ -5324,7 +5704,7 @@
             "Selector location": "Right/Down",
             "Label location": "NORTH",
             "Selector bits": "1",
-            "Label": "CELL 333",
+            "Label": "CELL 354",
             "Direction": "EAST",
             "Bitsize": "32"
           }
@@ -5381,7 +5761,7 @@
             "Selector location": "Right/Down",
             "Label location": "NORTH",
             "Selector bits": "1",
-            "Label": "CELL 338",
+            "Label": "CELL 359",
             "Direction": "EAST",
             "Bitsize": "32"
           }
@@ -5438,7 +5818,7 @@
             "Selector location": "Right/Down",
             "Label location": "NORTH",
             "Selector bits": "1",
-            "Label": "CELL 343",
+            "Label": "CELL 364",
             "Direction": "EAST",
             "Bitsize": "32"
           }
@@ -5495,7 +5875,7 @@
             "Selector location": "Right/Down",
             "Label location": "NORTH",
             "Selector bits": "1",
-            "Label": "CELL 348",
+            "Label": "CELL 369",
             "Direction": "EAST",
             "Bitsize": "32"
           }
@@ -5552,7 +5932,7 @@
             "Selector location": "Right/Down",
             "Label location": "NORTH",
             "Selector bits": "1",
-            "Label": "CELL 353",
+            "Label": "CELL 374",
             "Direction": "EAST",
             "Bitsize": "32"
           }
@@ -5608,7 +5988,7 @@
           "properties": {
             "Comparison Type": "2's complement",
             "Label location": "NORTH",
-            "Label": "CELL 358",
+            "Label": "CELL 379",
             "Bitsize": "4"
           }
         },
@@ -5628,7 +6008,7 @@
           "x": 94,
           "y": 627,
           "properties": {
-            "Label": "C_000A",
+            "Label": "C_000E",
             "Direction": "EAST",
             "Width": "4",
             "Bitsize": "4"
@@ -5652,7 +6032,7 @@
           "properties": {
             "Comparison Type": "2's complement",
             "Label location": "NORTH",
-            "Label": "CELL 362",
+            "Label": "CELL 383",
             "Bitsize": "4"
           }
         },
@@ -5672,7 +6052,7 @@
           "x": 44,
           "y": 652,
           "properties": {
-            "Label": "C_000B",
+            "Label": "C_000F",
             "Direction": "EAST",
             "Width": "4",
             "Bitsize": "4"
@@ -5696,7 +6076,7 @@
           "properties": {
             "Comparison Type": "2's complement",
             "Label location": "NORTH",
-            "Label": "CELL 366",
+            "Label": "CELL 387",
             "Bitsize": "4"
           }
         },
@@ -5716,7 +6096,7 @@
           "x": 69,
           "y": 652,
           "properties": {
-            "Label": "C_000C",
+            "Label": "C_0010",
             "Direction": "EAST",
             "Width": "4",
             "Bitsize": "4"
@@ -5740,7 +6120,7 @@
           "properties": {
             "Comparison Type": "2's complement",
             "Label location": "NORTH",
-            "Label": "CELL 370",
+            "Label": "CELL 391",
             "Bitsize": "4"
           }
         },
@@ -5760,7 +6140,7 @@
           "x": 94,
           "y": 652,
           "properties": {
-            "Label": "C_000D",
+            "Label": "C_0011",
             "Direction": "EAST",
             "Width": "4",
             "Bitsize": "4"
@@ -5784,7 +6164,7 @@
           "properties": {
             "Comparison Type": "2's complement",
             "Label location": "NORTH",
-            "Label": "CELL 374",
+            "Label": "CELL 395",
             "Bitsize": "4"
           }
         },
@@ -5804,7 +6184,7 @@
           "x": 44,
           "y": 677,
           "properties": {
-            "Label": "C_000E",
+            "Label": "C_0012",
             "Direction": "EAST",
             "Width": "4",
             "Bitsize": "4"
@@ -5828,7 +6208,7 @@
           "properties": {
             "Comparison Type": "2's complement",
             "Label location": "NORTH",
-            "Label": "CELL 378",
+            "Label": "CELL 399",
             "Bitsize": "4"
           }
         },
@@ -5848,7 +6228,7 @@
           "x": 69,
           "y": 677,
           "properties": {
-            "Label": "C_000F",
+            "Label": "C_0013",
             "Direction": "EAST",
             "Width": "4",
             "Bitsize": "4"
@@ -5872,7 +6252,7 @@
           "properties": {
             "Comparison Type": "2's complement",
             "Label location": "NORTH",
-            "Label": "CELL 382",
+            "Label": "CELL 403",
             "Bitsize": "4"
           }
         },
@@ -5892,7 +6272,7 @@
           "x": 94,
           "y": 677,
           "properties": {
-            "Label": "C_0010",
+            "Label": "C_0014",
             "Direction": "EAST",
             "Width": "4",
             "Bitsize": "4"
@@ -5916,7 +6296,7 @@
           "properties": {
             "Comparison Type": "2's complement",
             "Label location": "NORTH",
-            "Label": "CELL 386",
+            "Label": "CELL 407",
             "Bitsize": "4"
           }
         },
@@ -5936,7 +6316,7 @@
           "x": 44,
           "y": 702,
           "properties": {
-            "Label": "C_0011",
+            "Label": "C_0015",
             "Direction": "EAST",
             "Width": "4",
             "Bitsize": "4"
@@ -5954,13 +6334,48 @@
           }
         },
         {
+          "name": "com.ra4king.circuitsim.gui.peers.arithmetic.BitExtenderPeer",
+          "x": 75,
+          "y": 710,
+          "properties": {
+            "Label location": "NORTH",
+            "Label": "CELL 411",
+            "Direction": "EAST",
+            "Input Bitsize": "3",
+            "Output Bitsize": "4",
+            "Extension Type": "ZERO"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 69,
+          "y": 711,
+          "properties": {
+            "Label": "C_0016",
+            "Direction": "EAST",
+            "Width": "4",
+            "Bitsize": "3"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 79,
+          "y": 711,
+          "properties": {
+            "Label": "C_0017",
+            "Direction": "WEST",
+            "Width": "4",
+            "Bitsize": "4"
+          }
+        },
+        {
           "name": "com.ra4king.circuitsim.gui.peers.arithmetic.ComparatorPeer",
           "x": 75,
           "y": 700,
           "properties": {
             "Comparison Type": "2's complement",
             "Label location": "NORTH",
-            "Label": "CELL 390",
+            "Label": "CELL 414",
             "Bitsize": "4"
           }
         },
@@ -5980,10 +6395,10 @@
           "x": 69,
           "y": 702,
           "properties": {
-            "Label": "C_0012",
+            "Label": "C_0017",
             "Direction": "EAST",
             "Width": "4",
-            "Bitsize": "3"
+            "Bitsize": "4"
           }
         },
         {
@@ -5998,13 +6413,48 @@
           }
         },
         {
+          "name": "com.ra4king.circuitsim.gui.peers.arithmetic.BitExtenderPeer",
+          "x": 100,
+          "y": 710,
+          "properties": {
+            "Label location": "NORTH",
+            "Label": "CELL 418",
+            "Direction": "EAST",
+            "Input Bitsize": "3",
+            "Output Bitsize": "4",
+            "Extension Type": "ZERO"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 94,
+          "y": 711,
+          "properties": {
+            "Label": "C_0018",
+            "Direction": "EAST",
+            "Width": "4",
+            "Bitsize": "3"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 104,
+          "y": 711,
+          "properties": {
+            "Label": "C_0019",
+            "Direction": "WEST",
+            "Width": "4",
+            "Bitsize": "4"
+          }
+        },
+        {
           "name": "com.ra4king.circuitsim.gui.peers.arithmetic.ComparatorPeer",
           "x": 100,
           "y": 700,
           "properties": {
             "Comparison Type": "2's complement",
             "Label location": "NORTH",
-            "Label": "CELL 394",
+            "Label": "CELL 421",
             "Bitsize": "4"
           }
         },
@@ -6024,10 +6474,10 @@
           "x": 94,
           "y": 702,
           "properties": {
-            "Label": "C_0013",
+            "Label": "C_0019",
             "Direction": "EAST",
             "Width": "4",
-            "Bitsize": "3"
+            "Bitsize": "4"
           }
         },
         {
@@ -6042,13 +6492,48 @@
           }
         },
         {
+          "name": "com.ra4king.circuitsim.gui.peers.arithmetic.BitExtenderPeer",
+          "x": 50,
+          "y": 735,
+          "properties": {
+            "Label location": "NORTH",
+            "Label": "CELL 425",
+            "Direction": "EAST",
+            "Input Bitsize": "3",
+            "Output Bitsize": "4",
+            "Extension Type": "ZERO"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 44,
+          "y": 736,
+          "properties": {
+            "Label": "C_0005",
+            "Direction": "EAST",
+            "Width": "4",
+            "Bitsize": "3"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 54,
+          "y": 736,
+          "properties": {
+            "Label": "C_001A",
+            "Direction": "WEST",
+            "Width": "4",
+            "Bitsize": "4"
+          }
+        },
+        {
           "name": "com.ra4king.circuitsim.gui.peers.arithmetic.ComparatorPeer",
           "x": 50,
           "y": 725,
           "properties": {
             "Comparison Type": "2's complement",
             "Label location": "NORTH",
-            "Label": "CELL 398",
+            "Label": "CELL 428",
             "Bitsize": "4"
           }
         },
@@ -6068,10 +6553,10 @@
           "x": 44,
           "y": 727,
           "properties": {
-            "Label": "C_0004",
+            "Label": "C_001A",
             "Direction": "EAST",
             "Width": "4",
-            "Bitsize": "3"
+            "Bitsize": "4"
           }
         },
         {
@@ -6086,13 +6571,48 @@
           }
         },
         {
+          "name": "com.ra4king.circuitsim.gui.peers.arithmetic.BitExtenderPeer",
+          "x": 75,
+          "y": 735,
+          "properties": {
+            "Label location": "NORTH",
+            "Label": "CELL 432",
+            "Direction": "EAST",
+            "Input Bitsize": "3",
+            "Output Bitsize": "4",
+            "Extension Type": "ZERO"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 69,
+          "y": 736,
+          "properties": {
+            "Label": "C_0006",
+            "Direction": "EAST",
+            "Width": "4",
+            "Bitsize": "3"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 79,
+          "y": 736,
+          "properties": {
+            "Label": "C_001B",
+            "Direction": "WEST",
+            "Width": "4",
+            "Bitsize": "4"
+          }
+        },
+        {
           "name": "com.ra4king.circuitsim.gui.peers.arithmetic.ComparatorPeer",
           "x": 75,
           "y": 725,
           "properties": {
             "Comparison Type": "2's complement",
             "Label location": "NORTH",
-            "Label": "CELL 402",
+            "Label": "CELL 435",
             "Bitsize": "4"
           }
         },
@@ -6112,10 +6632,10 @@
           "x": 69,
           "y": 727,
           "properties": {
-            "Label": "C_0005",
+            "Label": "C_001B",
             "Direction": "EAST",
             "Width": "4",
-            "Bitsize": "3"
+            "Bitsize": "4"
           }
         },
         {
@@ -6130,13 +6650,48 @@
           }
         },
         {
+          "name": "com.ra4king.circuitsim.gui.peers.arithmetic.BitExtenderPeer",
+          "x": 100,
+          "y": 735,
+          "properties": {
+            "Label location": "NORTH",
+            "Label": "CELL 439",
+            "Direction": "EAST",
+            "Input Bitsize": "2",
+            "Output Bitsize": "4",
+            "Extension Type": "ZERO"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 94,
+          "y": 736,
+          "properties": {
+            "Label": "C_0007",
+            "Direction": "EAST",
+            "Width": "4",
+            "Bitsize": "2"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 104,
+          "y": 736,
+          "properties": {
+            "Label": "C_001C",
+            "Direction": "WEST",
+            "Width": "4",
+            "Bitsize": "4"
+          }
+        },
+        {
           "name": "com.ra4king.circuitsim.gui.peers.arithmetic.ComparatorPeer",
           "x": 100,
           "y": 725,
           "properties": {
             "Comparison Type": "2's complement",
             "Label location": "NORTH",
-            "Label": "CELL 406",
+            "Label": "CELL 442",
             "Bitsize": "4"
           }
         },
@@ -6156,10 +6711,10 @@
           "x": 94,
           "y": 727,
           "properties": {
-            "Label": "C_0006",
+            "Label": "C_001C",
             "Direction": "EAST",
             "Width": "4",
-            "Bitsize": "2"
+            "Bitsize": "4"
           }
         },
         {
@@ -6174,13 +6729,48 @@
           }
         },
         {
+          "name": "com.ra4king.circuitsim.gui.peers.arithmetic.BitExtenderPeer",
+          "x": 50,
+          "y": 760,
+          "properties": {
+            "Label location": "NORTH",
+            "Label": "CELL 446",
+            "Direction": "EAST",
+            "Input Bitsize": "2",
+            "Output Bitsize": "4",
+            "Extension Type": "ZERO"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 44,
+          "y": 761,
+          "properties": {
+            "Label": "C_0009",
+            "Direction": "EAST",
+            "Width": "4",
+            "Bitsize": "2"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 54,
+          "y": 761,
+          "properties": {
+            "Label": "C_001D",
+            "Direction": "WEST",
+            "Width": "4",
+            "Bitsize": "4"
+          }
+        },
+        {
           "name": "com.ra4king.circuitsim.gui.peers.arithmetic.ComparatorPeer",
           "x": 50,
           "y": 750,
           "properties": {
             "Comparison Type": "2's complement",
             "Label location": "NORTH",
-            "Label": "CELL 410",
+            "Label": "CELL 449",
             "Bitsize": "4"
           }
         },
@@ -6200,10 +6790,10 @@
           "x": 44,
           "y": 752,
           "properties": {
-            "Label": "C_0007",
+            "Label": "C_001D",
             "Direction": "EAST",
             "Width": "4",
-            "Bitsize": "2"
+            "Bitsize": "4"
           }
         },
         {
@@ -6218,13 +6808,48 @@
           }
         },
         {
+          "name": "com.ra4king.circuitsim.gui.peers.arithmetic.BitExtenderPeer",
+          "x": 75,
+          "y": 760,
+          "properties": {
+            "Label location": "NORTH",
+            "Label": "CELL 453",
+            "Direction": "EAST",
+            "Input Bitsize": "1",
+            "Output Bitsize": "4",
+            "Extension Type": "ZERO"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 69,
+          "y": 761,
+          "properties": {
+            "Label": "C_0001",
+            "Direction": "EAST",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 79,
+          "y": 761,
+          "properties": {
+            "Label": "C_001E",
+            "Direction": "WEST",
+            "Width": "4",
+            "Bitsize": "4"
+          }
+        },
+        {
           "name": "com.ra4king.circuitsim.gui.peers.arithmetic.ComparatorPeer",
           "x": 75,
           "y": 750,
           "properties": {
             "Comparison Type": "2's complement",
             "Label location": "NORTH",
-            "Label": "CELL 414",
+            "Label": "CELL 456",
             "Bitsize": "4"
           }
         },
@@ -6244,10 +6869,10 @@
           "x": 69,
           "y": 752,
           "properties": {
-            "Label": "C_0001",
+            "Label": "C_001E",
             "Direction": "EAST",
             "Width": "4",
-            "Bitsize": "1"
+            "Bitsize": "4"
           }
         },
         {
@@ -6269,7 +6894,7 @@
             "Selector location": "Right/Down",
             "Label location": "NORTH",
             "Selector bits": "1",
-            "Label": "CELL 418",
+            "Label": "CELL 460",
             "Direction": "EAST",
             "Bitsize": "32"
           }
@@ -6325,7 +6950,7 @@
           "properties": {
             "Comparison Type": "2's complement",
             "Label location": "NORTH",
-            "Label": "CELL 423",
+            "Label": "CELL 465",
             "Bitsize": "4"
           }
         },
@@ -6345,7 +6970,7 @@
           "x": 44,
           "y": 777,
           "properties": {
-            "Label": "C_000A",
+            "Label": "C_000E",
             "Direction": "EAST",
             "Width": "4",
             "Bitsize": "4"
@@ -6370,7 +6995,7 @@
             "Selector location": "Right/Down",
             "Label location": "NORTH",
             "Selector bits": "1",
-            "Label": "CELL 427",
+            "Label": "CELL 469",
             "Direction": "EAST",
             "Bitsize": "32"
           }
@@ -6427,7 +7052,7 @@
             "Selector location": "Right/Down",
             "Label location": "NORTH",
             "Selector bits": "1",
-            "Label": "CELL 432",
+            "Label": "CELL 474",
             "Direction": "EAST",
             "Bitsize": "32"
           }
@@ -6483,7 +7108,7 @@
           "properties": {
             "Comparison Type": "2's complement",
             "Label location": "NORTH",
-            "Label": "CELL 437",
+            "Label": "CELL 479",
             "Bitsize": "4"
           }
         },
@@ -6503,7 +7128,7 @@
           "x": 44,
           "y": 802,
           "properties": {
-            "Label": "C_000B",
+            "Label": "C_000F",
             "Direction": "EAST",
             "Width": "4",
             "Bitsize": "4"
@@ -6528,7 +7153,7 @@
             "Selector location": "Right/Down",
             "Label location": "NORTH",
             "Selector bits": "1",
-            "Label": "CELL 441",
+            "Label": "CELL 483",
             "Direction": "EAST",
             "Bitsize": "32"
           }
@@ -6585,7 +7210,7 @@
             "Selector location": "Right/Down",
             "Label location": "NORTH",
             "Selector bits": "1",
-            "Label": "CELL 446",
+            "Label": "CELL 488",
             "Direction": "EAST",
             "Bitsize": "32"
           }
@@ -6641,7 +7266,7 @@
           "properties": {
             "Comparison Type": "2's complement",
             "Label location": "NORTH",
-            "Label": "CELL 451",
+            "Label": "CELL 493",
             "Bitsize": "4"
           }
         },
@@ -6661,7 +7286,7 @@
           "x": 44,
           "y": 827,
           "properties": {
-            "Label": "C_000C",
+            "Label": "C_0010",
             "Direction": "EAST",
             "Width": "4",
             "Bitsize": "4"
@@ -6686,7 +7311,7 @@
             "Selector location": "Right/Down",
             "Label location": "NORTH",
             "Selector bits": "1",
-            "Label": "CELL 455",
+            "Label": "CELL 497",
             "Direction": "EAST",
             "Bitsize": "32"
           }
@@ -6743,7 +7368,7 @@
             "Selector location": "Right/Down",
             "Label location": "NORTH",
             "Selector bits": "1",
-            "Label": "CELL 460",
+            "Label": "CELL 502",
             "Direction": "EAST",
             "Bitsize": "32"
           }
@@ -6799,7 +7424,7 @@
           "properties": {
             "Comparison Type": "2's complement",
             "Label location": "NORTH",
-            "Label": "CELL 465",
+            "Label": "CELL 507",
             "Bitsize": "4"
           }
         },
@@ -6819,7 +7444,7 @@
           "x": 44,
           "y": 852,
           "properties": {
-            "Label": "C_000D",
+            "Label": "C_0011",
             "Direction": "EAST",
             "Width": "4",
             "Bitsize": "4"
@@ -6844,7 +7469,7 @@
             "Selector location": "Right/Down",
             "Label location": "NORTH",
             "Selector bits": "1",
-            "Label": "CELL 469",
+            "Label": "CELL 511",
             "Direction": "EAST",
             "Bitsize": "32"
           }
@@ -6901,7 +7526,7 @@
             "Selector location": "Right/Down",
             "Label location": "NORTH",
             "Selector bits": "1",
-            "Label": "CELL 474",
+            "Label": "CELL 516",
             "Direction": "EAST",
             "Bitsize": "32"
           }
@@ -6957,7 +7582,7 @@
           "properties": {
             "Comparison Type": "2's complement",
             "Label location": "NORTH",
-            "Label": "CELL 479",
+            "Label": "CELL 521",
             "Bitsize": "4"
           }
         },
@@ -6977,7 +7602,7 @@
           "x": 44,
           "y": 877,
           "properties": {
-            "Label": "C_000E",
+            "Label": "C_0012",
             "Direction": "EAST",
             "Width": "4",
             "Bitsize": "4"
@@ -7002,7 +7627,7 @@
             "Selector location": "Right/Down",
             "Label location": "NORTH",
             "Selector bits": "1",
-            "Label": "CELL 483",
+            "Label": "CELL 525",
             "Direction": "EAST",
             "Bitsize": "32"
           }
@@ -7059,7 +7684,7 @@
             "Selector location": "Right/Down",
             "Label location": "NORTH",
             "Selector bits": "1",
-            "Label": "CELL 488",
+            "Label": "CELL 530",
             "Direction": "EAST",
             "Bitsize": "32"
           }
@@ -7115,7 +7740,7 @@
           "properties": {
             "Comparison Type": "2's complement",
             "Label location": "NORTH",
-            "Label": "CELL 493",
+            "Label": "CELL 535",
             "Bitsize": "4"
           }
         },
@@ -7135,7 +7760,7 @@
           "x": 44,
           "y": 902,
           "properties": {
-            "Label": "C_000F",
+            "Label": "C_0013",
             "Direction": "EAST",
             "Width": "4",
             "Bitsize": "4"
@@ -7160,7 +7785,7 @@
             "Selector location": "Right/Down",
             "Label location": "NORTH",
             "Selector bits": "1",
-            "Label": "CELL 497",
+            "Label": "CELL 539",
             "Direction": "EAST",
             "Bitsize": "32"
           }
@@ -7217,7 +7842,7 @@
             "Selector location": "Right/Down",
             "Label location": "NORTH",
             "Selector bits": "1",
-            "Label": "CELL 502",
+            "Label": "CELL 544",
             "Direction": "EAST",
             "Bitsize": "32"
           }
@@ -7273,7 +7898,7 @@
           "properties": {
             "Comparison Type": "2's complement",
             "Label location": "NORTH",
-            "Label": "CELL 507",
+            "Label": "CELL 549",
             "Bitsize": "4"
           }
         },
@@ -7293,7 +7918,7 @@
           "x": 44,
           "y": 927,
           "properties": {
-            "Label": "C_0010",
+            "Label": "C_0014",
             "Direction": "EAST",
             "Width": "4",
             "Bitsize": "4"
@@ -7318,7 +7943,7 @@
             "Selector location": "Right/Down",
             "Label location": "NORTH",
             "Selector bits": "1",
-            "Label": "CELL 511",
+            "Label": "CELL 553",
             "Direction": "EAST",
             "Bitsize": "32"
           }
@@ -7375,7 +8000,7 @@
             "Selector location": "Right/Down",
             "Label location": "NORTH",
             "Selector bits": "1",
-            "Label": "CELL 516",
+            "Label": "CELL 558",
             "Direction": "EAST",
             "Bitsize": "32"
           }
@@ -7431,7 +8056,7 @@
           "properties": {
             "Comparison Type": "2's complement",
             "Label location": "NORTH",
-            "Label": "CELL 521",
+            "Label": "CELL 563",
             "Bitsize": "4"
           }
         },
@@ -7451,7 +8076,7 @@
           "x": 44,
           "y": 952,
           "properties": {
-            "Label": "C_0011",
+            "Label": "C_0015",
             "Direction": "EAST",
             "Width": "4",
             "Bitsize": "4"
@@ -7476,7 +8101,7 @@
             "Selector location": "Right/Down",
             "Label location": "NORTH",
             "Selector bits": "1",
-            "Label": "CELL 525",
+            "Label": "CELL 567",
             "Direction": "EAST",
             "Bitsize": "32"
           }
@@ -7533,7 +8158,7 @@
             "Selector location": "Right/Down",
             "Label location": "NORTH",
             "Selector bits": "1",
-            "Label": "CELL 530",
+            "Label": "CELL 572",
             "Direction": "EAST",
             "Bitsize": "32"
           }
@@ -7583,13 +8208,48 @@
           }
         },
         {
+          "name": "com.ra4king.circuitsim.gui.peers.arithmetic.BitExtenderPeer",
+          "x": 50,
+          "y": 985,
+          "properties": {
+            "Label location": "NORTH",
+            "Label": "CELL 577",
+            "Direction": "EAST",
+            "Input Bitsize": "3",
+            "Output Bitsize": "4",
+            "Extension Type": "ZERO"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 44,
+          "y": 986,
+          "properties": {
+            "Label": "C_0016",
+            "Direction": "EAST",
+            "Width": "4",
+            "Bitsize": "3"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 54,
+          "y": 986,
+          "properties": {
+            "Label": "C_0017",
+            "Direction": "WEST",
+            "Width": "4",
+            "Bitsize": "4"
+          }
+        },
+        {
           "name": "com.ra4king.circuitsim.gui.peers.arithmetic.ComparatorPeer",
           "x": 50,
           "y": 975,
           "properties": {
             "Comparison Type": "2's complement",
             "Label location": "NORTH",
-            "Label": "CELL 535",
+            "Label": "CELL 580",
             "Bitsize": "4"
           }
         },
@@ -7609,10 +8269,10 @@
           "x": 44,
           "y": 977,
           "properties": {
-            "Label": "C_0012",
+            "Label": "C_0017",
             "Direction": "EAST",
             "Width": "4",
-            "Bitsize": "3"
+            "Bitsize": "4"
           }
         },
         {
@@ -7634,7 +8294,7 @@
             "Selector location": "Right/Down",
             "Label location": "NORTH",
             "Selector bits": "1",
-            "Label": "CELL 539",
+            "Label": "CELL 584",
             "Direction": "EAST",
             "Bitsize": "32"
           }
@@ -7691,7 +8351,7 @@
             "Selector location": "Right/Down",
             "Label location": "NORTH",
             "Selector bits": "1",
-            "Label": "CELL 544",
+            "Label": "CELL 589",
             "Direction": "EAST",
             "Bitsize": "32"
           }
@@ -7741,13 +8401,48 @@
           }
         },
         {
+          "name": "com.ra4king.circuitsim.gui.peers.arithmetic.BitExtenderPeer",
+          "x": 50,
+          "y": 1010,
+          "properties": {
+            "Label location": "NORTH",
+            "Label": "CELL 594",
+            "Direction": "EAST",
+            "Input Bitsize": "3",
+            "Output Bitsize": "4",
+            "Extension Type": "ZERO"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 44,
+          "y": 1011,
+          "properties": {
+            "Label": "C_0018",
+            "Direction": "EAST",
+            "Width": "4",
+            "Bitsize": "3"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 54,
+          "y": 1011,
+          "properties": {
+            "Label": "C_0019",
+            "Direction": "WEST",
+            "Width": "4",
+            "Bitsize": "4"
+          }
+        },
+        {
           "name": "com.ra4king.circuitsim.gui.peers.arithmetic.ComparatorPeer",
           "x": 50,
           "y": 1000,
           "properties": {
             "Comparison Type": "2's complement",
             "Label location": "NORTH",
-            "Label": "CELL 549",
+            "Label": "CELL 597",
             "Bitsize": "4"
           }
         },
@@ -7767,10 +8462,10 @@
           "x": 44,
           "y": 1002,
           "properties": {
-            "Label": "C_0013",
+            "Label": "C_0019",
             "Direction": "EAST",
             "Width": "4",
-            "Bitsize": "3"
+            "Bitsize": "4"
           }
         },
         {
@@ -7792,7 +8487,7 @@
             "Selector location": "Right/Down",
             "Label location": "NORTH",
             "Selector bits": "1",
-            "Label": "CELL 553",
+            "Label": "CELL 601",
             "Direction": "EAST",
             "Bitsize": "32"
           }
@@ -7849,7 +8544,7 @@
             "Selector location": "Right/Down",
             "Label location": "NORTH",
             "Selector bits": "1",
-            "Label": "CELL 558",
+            "Label": "CELL 606",
             "Direction": "EAST",
             "Bitsize": "32"
           }
@@ -7899,13 +8594,48 @@
           }
         },
         {
+          "name": "com.ra4king.circuitsim.gui.peers.arithmetic.BitExtenderPeer",
+          "x": 50,
+          "y": 1035,
+          "properties": {
+            "Label location": "NORTH",
+            "Label": "CELL 611",
+            "Direction": "EAST",
+            "Input Bitsize": "3",
+            "Output Bitsize": "4",
+            "Extension Type": "ZERO"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 44,
+          "y": 1036,
+          "properties": {
+            "Label": "C_0005",
+            "Direction": "EAST",
+            "Width": "4",
+            "Bitsize": "3"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 54,
+          "y": 1036,
+          "properties": {
+            "Label": "C_001A",
+            "Direction": "WEST",
+            "Width": "4",
+            "Bitsize": "4"
+          }
+        },
+        {
           "name": "com.ra4king.circuitsim.gui.peers.arithmetic.ComparatorPeer",
           "x": 50,
           "y": 1025,
           "properties": {
             "Comparison Type": "2's complement",
             "Label location": "NORTH",
-            "Label": "CELL 563",
+            "Label": "CELL 614",
             "Bitsize": "4"
           }
         },
@@ -7925,10 +8655,10 @@
           "x": 44,
           "y": 1027,
           "properties": {
-            "Label": "C_0004",
+            "Label": "C_001A",
             "Direction": "EAST",
             "Width": "4",
-            "Bitsize": "3"
+            "Bitsize": "4"
           }
         },
         {
@@ -7950,7 +8680,7 @@
             "Selector location": "Right/Down",
             "Label location": "NORTH",
             "Selector bits": "1",
-            "Label": "CELL 567",
+            "Label": "CELL 618",
             "Direction": "EAST",
             "Bitsize": "32"
           }
@@ -8007,7 +8737,7 @@
             "Selector location": "Right/Down",
             "Label location": "NORTH",
             "Selector bits": "1",
-            "Label": "CELL 572",
+            "Label": "CELL 623",
             "Direction": "EAST",
             "Bitsize": "32"
           }
@@ -8057,13 +8787,48 @@
           }
         },
         {
+          "name": "com.ra4king.circuitsim.gui.peers.arithmetic.BitExtenderPeer",
+          "x": 50,
+          "y": 1060,
+          "properties": {
+            "Label location": "NORTH",
+            "Label": "CELL 628",
+            "Direction": "EAST",
+            "Input Bitsize": "3",
+            "Output Bitsize": "4",
+            "Extension Type": "ZERO"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 44,
+          "y": 1061,
+          "properties": {
+            "Label": "C_0006",
+            "Direction": "EAST",
+            "Width": "4",
+            "Bitsize": "3"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 54,
+          "y": 1061,
+          "properties": {
+            "Label": "C_001B",
+            "Direction": "WEST",
+            "Width": "4",
+            "Bitsize": "4"
+          }
+        },
+        {
           "name": "com.ra4king.circuitsim.gui.peers.arithmetic.ComparatorPeer",
           "x": 50,
           "y": 1050,
           "properties": {
             "Comparison Type": "2's complement",
             "Label location": "NORTH",
-            "Label": "CELL 577",
+            "Label": "CELL 631",
             "Bitsize": "4"
           }
         },
@@ -8083,10 +8848,10 @@
           "x": 44,
           "y": 1052,
           "properties": {
-            "Label": "C_0005",
+            "Label": "C_001B",
             "Direction": "EAST",
             "Width": "4",
-            "Bitsize": "3"
+            "Bitsize": "4"
           }
         },
         {
@@ -8108,7 +8873,7 @@
             "Selector location": "Right/Down",
             "Label location": "NORTH",
             "Selector bits": "1",
-            "Label": "CELL 581",
+            "Label": "CELL 635",
             "Direction": "EAST",
             "Bitsize": "32"
           }
@@ -8165,7 +8930,7 @@
             "Selector location": "Right/Down",
             "Label location": "NORTH",
             "Selector bits": "1",
-            "Label": "CELL 586",
+            "Label": "CELL 640",
             "Direction": "EAST",
             "Bitsize": "32"
           }
@@ -8215,13 +8980,48 @@
           }
         },
         {
+          "name": "com.ra4king.circuitsim.gui.peers.arithmetic.BitExtenderPeer",
+          "x": 50,
+          "y": 1085,
+          "properties": {
+            "Label location": "NORTH",
+            "Label": "CELL 645",
+            "Direction": "EAST",
+            "Input Bitsize": "2",
+            "Output Bitsize": "4",
+            "Extension Type": "ZERO"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 44,
+          "y": 1086,
+          "properties": {
+            "Label": "C_0007",
+            "Direction": "EAST",
+            "Width": "4",
+            "Bitsize": "2"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 54,
+          "y": 1086,
+          "properties": {
+            "Label": "C_001C",
+            "Direction": "WEST",
+            "Width": "4",
+            "Bitsize": "4"
+          }
+        },
+        {
           "name": "com.ra4king.circuitsim.gui.peers.arithmetic.ComparatorPeer",
           "x": 50,
           "y": 1075,
           "properties": {
             "Comparison Type": "2's complement",
             "Label location": "NORTH",
-            "Label": "CELL 591",
+            "Label": "CELL 648",
             "Bitsize": "4"
           }
         },
@@ -8241,10 +9041,10 @@
           "x": 44,
           "y": 1077,
           "properties": {
-            "Label": "C_0006",
+            "Label": "C_001C",
             "Direction": "EAST",
             "Width": "4",
-            "Bitsize": "2"
+            "Bitsize": "4"
           }
         },
         {
@@ -8266,7 +9066,7 @@
             "Selector location": "Right/Down",
             "Label location": "NORTH",
             "Selector bits": "1",
-            "Label": "CELL 595",
+            "Label": "CELL 652",
             "Direction": "EAST",
             "Bitsize": "32"
           }
@@ -8323,7 +9123,7 @@
             "Selector location": "Right/Down",
             "Label location": "NORTH",
             "Selector bits": "1",
-            "Label": "CELL 600",
+            "Label": "CELL 657",
             "Direction": "EAST",
             "Bitsize": "32"
           }
@@ -8373,13 +9173,48 @@
           }
         },
         {
+          "name": "com.ra4king.circuitsim.gui.peers.arithmetic.BitExtenderPeer",
+          "x": 50,
+          "y": 1110,
+          "properties": {
+            "Label location": "NORTH",
+            "Label": "CELL 662",
+            "Direction": "EAST",
+            "Input Bitsize": "2",
+            "Output Bitsize": "4",
+            "Extension Type": "ZERO"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 44,
+          "y": 1111,
+          "properties": {
+            "Label": "C_0009",
+            "Direction": "EAST",
+            "Width": "4",
+            "Bitsize": "2"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 54,
+          "y": 1111,
+          "properties": {
+            "Label": "C_001D",
+            "Direction": "WEST",
+            "Width": "4",
+            "Bitsize": "4"
+          }
+        },
+        {
           "name": "com.ra4king.circuitsim.gui.peers.arithmetic.ComparatorPeer",
           "x": 50,
           "y": 1100,
           "properties": {
             "Comparison Type": "2's complement",
             "Label location": "NORTH",
-            "Label": "CELL 605",
+            "Label": "CELL 665",
             "Bitsize": "4"
           }
         },
@@ -8399,10 +9234,10 @@
           "x": 44,
           "y": 1102,
           "properties": {
-            "Label": "C_0007",
+            "Label": "C_001D",
             "Direction": "EAST",
             "Width": "4",
-            "Bitsize": "2"
+            "Bitsize": "4"
           }
         },
         {
@@ -8424,7 +9259,7 @@
             "Selector location": "Right/Down",
             "Label location": "NORTH",
             "Selector bits": "1",
-            "Label": "CELL 609",
+            "Label": "CELL 669",
             "Direction": "EAST",
             "Bitsize": "32"
           }
@@ -8481,7 +9316,7 @@
             "Selector location": "Right/Down",
             "Label location": "NORTH",
             "Selector bits": "1",
-            "Label": "CELL 614",
+            "Label": "CELL 674",
             "Direction": "EAST",
             "Bitsize": "32"
           }
@@ -8531,13 +9366,48 @@
           }
         },
         {
+          "name": "com.ra4king.circuitsim.gui.peers.arithmetic.BitExtenderPeer",
+          "x": 50,
+          "y": 1135,
+          "properties": {
+            "Label location": "NORTH",
+            "Label": "CELL 679",
+            "Direction": "EAST",
+            "Input Bitsize": "1",
+            "Output Bitsize": "4",
+            "Extension Type": "ZERO"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 44,
+          "y": 1136,
+          "properties": {
+            "Label": "C_0001",
+            "Direction": "EAST",
+            "Width": "4",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 54,
+          "y": 1136,
+          "properties": {
+            "Label": "C_001E",
+            "Direction": "WEST",
+            "Width": "4",
+            "Bitsize": "4"
+          }
+        },
+        {
           "name": "com.ra4king.circuitsim.gui.peers.arithmetic.ComparatorPeer",
           "x": 50,
           "y": 1125,
           "properties": {
             "Comparison Type": "2's complement",
             "Label location": "NORTH",
-            "Label": "CELL 619",
+            "Label": "CELL 682",
             "Bitsize": "4"
           }
         },
@@ -8557,10 +9427,10 @@
           "x": 44,
           "y": 1127,
           "properties": {
-            "Label": "C_0001",
+            "Label": "C_001E",
             "Direction": "EAST",
             "Width": "4",
-            "Bitsize": "1"
+            "Bitsize": "4"
           }
         },
         {
@@ -8582,7 +9452,7 @@
             "Selector location": "Right/Down",
             "Label location": "NORTH",
             "Selector bits": "1",
-            "Label": "CELL 623",
+            "Label": "CELL 686",
             "Direction": "EAST",
             "Bitsize": "32"
           }
@@ -8639,7 +9509,7 @@
             "Selector location": "Right/Down",
             "Label location": "NORTH",
             "Selector bits": "1",
-            "Label": "CELL 628",
+            "Label": "CELL 691",
             "Direction": "EAST",
             "Bitsize": "32"
           }
@@ -8696,7 +9566,7 @@
             "Selector location": "Right/Down",
             "Label location": "NORTH",
             "Selector bits": "1",
-            "Label": "CELL 633",
+            "Label": "CELL 696",
             "Direction": "EAST",
             "Bitsize": "32"
           }
@@ -8753,7 +9623,7 @@
             "Selector location": "Right/Down",
             "Label location": "NORTH",
             "Selector bits": "1",
-            "Label": "CELL 638",
+            "Label": "CELL 701",
             "Direction": "EAST",
             "Bitsize": "32"
           }
@@ -8810,7 +9680,7 @@
             "Selector location": "Right/Down",
             "Label location": "NORTH",
             "Selector bits": "1",
-            "Label": "CELL 643",
+            "Label": "CELL 706",
             "Direction": "EAST",
             "Bitsize": "32"
           }
@@ -8865,7 +9735,7 @@
           "y": 50,
           "properties": {
             "Label location": "NORTH",
-            "Label": "CELL 648",
+            "Label": "CELL 711",
             "Value": "0000",
             "Direction": "EAST",
             "Bitsize": "4",
@@ -8877,7 +9747,7 @@
           "x": 9,
           "y": 50,
           "properties": {
-            "Label": "C_0009",
+            "Label": "C_000D",
             "Direction": "WEST",
             "Width": "4",
             "Bitsize": "4"
@@ -8889,7 +9759,7 @@
           "y": 80,
           "properties": {
             "Label location": "NORTH",
-            "Label": "CELL 650",
+            "Label": "CELL 713",
             "Value": "0",
             "Direction": "EAST",
             "Bitsize": "1",
@@ -8913,7 +9783,7 @@
           "y": 110,
           "properties": {
             "Label location": "NORTH",
-            "Label": "CELL 652",
+            "Label": "CELL 715",
             "Value": "1",
             "Direction": "EAST",
             "Bitsize": "1",
@@ -8937,7 +9807,7 @@
           "y": 140,
           "properties": {
             "Label location": "NORTH",
-            "Label": "CELL 654",
+            "Label": "CELL 717",
             "Value": "00000000000000000000000000000000",
             "Direction": "EAST",
             "Bitsize": "32",
@@ -8961,7 +9831,7 @@
           "y": 170,
           "properties": {
             "Label location": "NORTH",
-            "Label": "CELL 656",
+            "Label": "CELL 719",
             "Value": "1111",
             "Direction": "EAST",
             "Bitsize": "4",
@@ -8973,7 +9843,7 @@
           "x": 9,
           "y": 170,
           "properties": {
-            "Label": "C_000A",
+            "Label": "C_000E",
             "Direction": "WEST",
             "Width": "4",
             "Bitsize": "4"
@@ -8985,7 +9855,7 @@
           "y": 200,
           "properties": {
             "Label location": "NORTH",
-            "Label": "CELL 658",
+            "Label": "CELL 721",
             "Value": "1110",
             "Direction": "EAST",
             "Bitsize": "4",
@@ -8997,7 +9867,7 @@
           "x": 9,
           "y": 200,
           "properties": {
-            "Label": "C_000B",
+            "Label": "C_000F",
             "Direction": "WEST",
             "Width": "4",
             "Bitsize": "4"
@@ -9009,7 +9879,7 @@
           "y": 230,
           "properties": {
             "Label location": "NORTH",
-            "Label": "CELL 660",
+            "Label": "CELL 723",
             "Value": "1101",
             "Direction": "EAST",
             "Bitsize": "4",
@@ -9021,7 +9891,7 @@
           "x": 9,
           "y": 230,
           "properties": {
-            "Label": "C_000C",
+            "Label": "C_0010",
             "Direction": "WEST",
             "Width": "4",
             "Bitsize": "4"
@@ -9033,7 +9903,7 @@
           "y": 260,
           "properties": {
             "Label location": "NORTH",
-            "Label": "CELL 662",
+            "Label": "CELL 725",
             "Value": "1100",
             "Direction": "EAST",
             "Bitsize": "4",
@@ -9045,7 +9915,7 @@
           "x": 9,
           "y": 260,
           "properties": {
-            "Label": "C_000D",
+            "Label": "C_0011",
             "Direction": "WEST",
             "Width": "4",
             "Bitsize": "4"
@@ -9057,7 +9927,7 @@
           "y": 290,
           "properties": {
             "Label location": "NORTH",
-            "Label": "CELL 664",
+            "Label": "CELL 727",
             "Value": "1011",
             "Direction": "EAST",
             "Bitsize": "4",
@@ -9069,7 +9939,7 @@
           "x": 9,
           "y": 290,
           "properties": {
-            "Label": "C_000E",
+            "Label": "C_0012",
             "Direction": "WEST",
             "Width": "4",
             "Bitsize": "4"
@@ -9081,7 +9951,7 @@
           "y": 320,
           "properties": {
             "Label location": "NORTH",
-            "Label": "CELL 666",
+            "Label": "CELL 729",
             "Value": "1010",
             "Direction": "EAST",
             "Bitsize": "4",
@@ -9093,7 +9963,7 @@
           "x": 9,
           "y": 320,
           "properties": {
-            "Label": "C_000F",
+            "Label": "C_0013",
             "Direction": "WEST",
             "Width": "4",
             "Bitsize": "4"
@@ -9105,7 +9975,7 @@
           "y": 350,
           "properties": {
             "Label location": "NORTH",
-            "Label": "CELL 668",
+            "Label": "CELL 731",
             "Value": "1001",
             "Direction": "EAST",
             "Bitsize": "4",
@@ -9117,7 +9987,7 @@
           "x": 9,
           "y": 350,
           "properties": {
-            "Label": "C_0010",
+            "Label": "C_0014",
             "Direction": "WEST",
             "Width": "4",
             "Bitsize": "4"
@@ -9129,7 +9999,7 @@
           "y": 380,
           "properties": {
             "Label location": "NORTH",
-            "Label": "CELL 670",
+            "Label": "CELL 733",
             "Value": "1000",
             "Direction": "EAST",
             "Bitsize": "4",
@@ -9141,7 +10011,7 @@
           "x": 9,
           "y": 380,
           "properties": {
-            "Label": "C_0011",
+            "Label": "C_0015",
             "Direction": "WEST",
             "Width": "4",
             "Bitsize": "4"
@@ -9153,7 +10023,7 @@
           "y": 410,
           "properties": {
             "Label location": "NORTH",
-            "Label": "CELL 672",
+            "Label": "CELL 735",
             "Value": "111",
             "Direction": "EAST",
             "Bitsize": "3",
@@ -9165,7 +10035,7 @@
           "x": 8,
           "y": 410,
           "properties": {
-            "Label": "C_0012",
+            "Label": "C_0016",
             "Direction": "WEST",
             "Width": "4",
             "Bitsize": "3"
@@ -9177,7 +10047,7 @@
           "y": 440,
           "properties": {
             "Label location": "NORTH",
-            "Label": "CELL 674",
+            "Label": "CELL 737",
             "Value": "110",
             "Direction": "EAST",
             "Bitsize": "3",
@@ -9189,7 +10059,7 @@
           "x": 8,
           "y": 440,
           "properties": {
-            "Label": "C_0013",
+            "Label": "C_0018",
             "Direction": "WEST",
             "Width": "4",
             "Bitsize": "3"
@@ -9201,7 +10071,7 @@
           "y": 470,
           "properties": {
             "Label location": "NORTH",
-            "Label": "CELL 676",
+            "Label": "CELL 739",
             "Value": "101",
             "Direction": "EAST",
             "Bitsize": "3",
@@ -9213,7 +10083,7 @@
           "x": 8,
           "y": 470,
           "properties": {
-            "Label": "C_0004",
+            "Label": "C_0005",
             "Direction": "WEST",
             "Width": "4",
             "Bitsize": "3"
@@ -9225,7 +10095,7 @@
           "y": 500,
           "properties": {
             "Label location": "NORTH",
-            "Label": "CELL 678",
+            "Label": "CELL 741",
             "Value": "100",
             "Direction": "EAST",
             "Bitsize": "3",
@@ -9237,7 +10107,7 @@
           "x": 8,
           "y": 500,
           "properties": {
-            "Label": "C_0005",
+            "Label": "C_0006",
             "Direction": "WEST",
             "Width": "4",
             "Bitsize": "3"
@@ -9249,7 +10119,7 @@
           "y": 530,
           "properties": {
             "Label location": "NORTH",
-            "Label": "CELL 680",
+            "Label": "CELL 743",
             "Value": "11",
             "Direction": "EAST",
             "Bitsize": "2",
@@ -9261,7 +10131,7 @@
           "x": 7,
           "y": 530,
           "properties": {
-            "Label": "C_0006",
+            "Label": "C_0007",
             "Direction": "WEST",
             "Width": "4",
             "Bitsize": "2"
@@ -9273,7 +10143,7 @@
           "y": 560,
           "properties": {
             "Label location": "NORTH",
-            "Label": "CELL 682",
+            "Label": "CELL 745",
             "Value": "10",
             "Direction": "EAST",
             "Bitsize": "2",
@@ -9285,7 +10155,7 @@
           "x": 7,
           "y": 560,
           "properties": {
-            "Label": "C_0007",
+            "Label": "C_0009",
             "Direction": "WEST",
             "Width": "4",
             "Bitsize": "2"
@@ -9348,6 +10218,6 @@
     }
   ],
   "revisionSignatures": [
-    "CTMwNWUwMzNiMjAxY2Q4NDJiYTQ0MGI1NjRkM2JmZGE0MzllMmMxMzJhYTcyZTE5YjM2NjNjMGU5OTI0ZTNkM2EJMTc3NTQxNjIyMzI5OAllMDUzYmIxYTYzMmExNTFmNjBlODVmNGI1MmRlZTJiNmYxZjE2YWI3OGRlYjBlZmQ3MzBiNDUzOWI1NzdjNmYx"
+    "CWI1NTE4YWQ3NzYzZmU0NTY2ZGJiNTVjNTRkZmFmMmQ5OTBmYWQ1MjFjZTAzNGIzM2E4M2IzM2FlYWVjYzU4ZDYJMTc3NTQxOTMyNzE3NQk4Zjc4ZTEyYjg1ZjRlNTQ1NTc5MTBjMmJlMDU3ZDVhNGQ0YWFkN2E4ZmQ2ZWZiNzM0YzU2MmVlMjQ2OTViY2Nj"
   ]
 }
