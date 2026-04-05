@@ -17,6 +17,9 @@ test:
 	@echo "--- Running Simulation ---"
 	vvp $(OUT)
 	@echo "--- Simulation Complete ---"
+	@echo "--- Showing Simulation ---"
+	gtkwave waves.vcd layout.gtkw 
+	
 
 # Runs Yosys to synthesize the pipeline into a JSON netlist
 netlist:

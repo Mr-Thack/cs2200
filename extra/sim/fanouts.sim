@@ -1,0 +1,78 @@
+{
+  "version": "1.11.2-CE",
+  "globalBitSize": 1,
+  "clockSpeed": 1,
+  "circuits": [
+    {
+      "name": "New circuit",
+      "components": [
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 28,
+          "y": 15,
+          "properties": {
+            "Label": "O_00IN",
+            "Direction": "EAST",
+            "Width": "5",
+            "Bitsize": "4"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 37,
+          "y": 17,
+          "properties": {
+            "Label": "O_0034",
+            "Direction": "WEST",
+            "Width": "5",
+            "Bitsize": "2"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 37,
+          "y": 18,
+          "properties": {
+            "Label": "O_0002",
+            "Direction": "WEST",
+            "Width": "5",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 37,
+          "y": 19,
+          "properties": {
+            "Label": "O_0001",
+            "Direction": "WEST",
+            "Width": "5",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.SplitterPeer",
+          "x": 35,
+          "y": 16,
+          "properties": {
+            "Label location": "NORTH",
+            "Bit 3": "2",
+            "Fanouts": "3",
+            "Input location": "Left/Top",
+            "Label": "",
+            "Bit 2": "2",
+            "Direction": "EAST",
+            "Bit 1": "1",
+            "Bitsize": "4",
+            "Bit 0": "0"
+          }
+        }
+      ],
+      "wires": []
+    }
+  ],
+  "revisionSignatures": [
+    "CWRmZTQxM2U2YjdjYWJlMjlkMGQzY2Y5NWY1ZjkzYTUwYjI4Yzk1OTk0NDc2YmEwZTFlNDQ2MWUwZDFmYzIxMDUJMTc3NTM1NDAyNTkwNwk1OGI4M2Q0ZmU5MmY0MDcxNTQ5Y2M3MTA3ZTE1NjQ3MjQ1NzUyNWY1MDJmNGE5NTk1MmE4OGE2ZGFmZjA1ODU5",
+    "ZGZlNDEzZTZiN2NhYmUyOWQwZDNjZjk1ZjVmOTNhNTBiMjhjOTU5OTQ0NzZiYTBlMWU0NDYxZTBkMWZjMjEwNQllNDNjNWIyM2JhODRkMGI4NzY0Nzc5NTUyMDdmOTAxM2MyNjBiYzM3ZTI0YjAyY2ExNGUzNzQyNDJmMzkxZTE5CTE3NzUzNTQyNjU3ODIJNThiODNkNGZlOTJmNDA3MTU0OWNjNzEwN2UxNTY0NzI0NTc1MjVmNTAyZjRhOTU5NTJhODhhNmRhZmYwNTg1OQ\u003d\u003d"
+  ]
+}

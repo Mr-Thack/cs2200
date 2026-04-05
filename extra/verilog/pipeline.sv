@@ -31,7 +31,7 @@ types::mbuf_data mbuf_in, mbuf_out;
 always_ff @(posedge clk) begin
     if (rst) begin
         halt_now <= 1'b0;
-    end else if (dbuf_out.opcode == OP_HALT) begin
+    end else if (dbuf_out.opcode == types::OP_HALT) begin
         // As soon as we get HALT in the exec stage,
         // latch onto the STALL forever and forever.
         halt_now <= 1'b1;
@@ -71,7 +71,7 @@ always_ff @(posedge clk) begin
         // If branch_true, then our policy of predicting not taken was wrong
         if (branch_true) stat_flushes <= stat_flushes + 1;
 
-        if (dbuf_out.opcode == OP_BEQ || dbuf_out.opcode == OP_BGT) begin
+        if (dbuf_out.opcode == types::OP_BEQ || dbuf_out.opcode == types::OP_BGT) begin
             stat_branches_seen <= stat_branches_seen + 1;
             // If not branch_true, then we were correct in prredicting not taken
             if (!branch_true) stat_branches_correct <= stat_branches_correct + 1;
@@ -210,7 +210,7 @@ dprf registers (
 );
 
 
-assign stall_now = (dbuf_out.dr != 4'd0) && (dbuf_out.opcode == OP_LW)
+assign stall_now = (dbuf_out.dr != 4'd0) && (dbuf_out.opcode == types::OP_LW)
                     && ((dbuf_out.dr == sr1) || (dbuf_out.dr == sr2));
 
 
@@ -238,7 +238,7 @@ always_ff @(posedge clk) begin
     // Need to check halt_now and dbuf_out.opcode because
     // halt_now is only latched on the clock cycle, so it wouldn't propogate
     // fast enough to prevent the decode stage from forwarding this
-    dbuf_out <= (rst || halt_now || stall_now || (dbuf_out.opcode == OP_HALT)) ? '0 : dbuf_in;
+    dbuf_out <= (rst || halt_now || stall_now || (dbuf_out.opcode == types::OP_HALT)) ? '0 : dbuf_in;
 end
 
 // FOR DEBUGGGING //
@@ -307,39 +307,39 @@ always_comb begin
 
     case (dbuf_out.opcode)
         types::OP_ADD, types::OP_JALR: begin
-            aluop = ADD;
+            aluop = types::ALU_ADD;
         end
 
         types::OP_ADDI, types::OP_LW: begin
-            aluop = ADD;
+            aluop = types::ALU_ADD;
             alu_val2 = dbuf_out.offset;
         end
 
         types::OP_SW: begin
-            aluop = ADD;
+            aluop = types::ALU_ADD;
             alu_val1 = dbuf_out.offset;
         end
 
         types::OP_NAND: begin
-            aluop = NAND;
+            aluop = types::ALU_NAND;
         end
 
         types::OP_BEQ, types::OP_BGT, types::OP_MIN, types::OP_MAX: begin
-            aluop = SUB; 
+            aluop = types::ALU_SUB; 
         end
 
         types::OP_HALT: begin
-            aluop = IGNORE;
+            aluop = types::ALU_IGNORE;
         end
 
         types::OP_LEA: begin
-            aluop= ADD;
+            aluop= types::ALU_ADD;
             alu_val1 = dbuf_out.pc_plus_1;
             alu_val2 = dbuf_out.offset;
         end
 
         default: begin
-            aluop = IGNORE;
+            aluop = types::ALU_IGNORE;
         end
     endcase
 end
@@ -418,7 +418,7 @@ logic [31:0] data_read_line;
 logic [31:0] data_write_dmem;
 
 always_comb begin
-    we_dmem = (ebuf_out.opcode == OP_SW);
+    we_dmem = (ebuf_out.opcode == types::OP_SW);
     data_write_dmem = ebuf_out.data;
 end
 
