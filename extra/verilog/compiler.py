@@ -277,11 +277,16 @@ class CircuitBuilder:
                 "Bitsize": str(out_q.bitsize)
             }
         )
+        # Left
         self.add_tunnel(x - 6, y + 1, "EAST",  in_d)
         self.add_tunnel(x - 6, y + 2, "EAST",  in_en)
+
+        # Right (Output)
         self.add_tunnel(x + 4, y + 1, "WEST",  out_q)
-        self.add_tunnel(x - 1, y + 4, "NORTH", in_clk)
-        self.add_tunnel(x + 1, y + 4, "NORTH", in_clr)
+
+        # Bottom (CLK & CLR)
+        self.add_tunnel(x - 2, y + 4, "NORTH", in_clk)
+        self.add_tunnel(x    , y + 4, "NORTH", in_clr)
 
     def add_splitter(self, x: int, y: int, in_bus: Wire, out_wires: List[Wire]):
         """
