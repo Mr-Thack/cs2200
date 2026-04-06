@@ -397,10 +397,10 @@ class CircuitBuilder:
         # This part calculates offset due to line size
         # whereas the previous one calculated offset due to height
         if bitsize < 8:
-            offset = bitsize - 7
+            offset = bitsize - 8
             
-            if bitsize in (2, 3, 4):
-                offset -= 1
+            if bitsize == 1:
+                offset += 1
 
             if is_output:
                 dx -= offset
