@@ -538,6 +538,51 @@ class CircuitBuilder:
 # Global tracker for constants so we can spawn them at the end
 GLOBAL_CONSTANTS = {}
 
+def build_bit_registry(module_data, netlist) -> dict:
+    """
+    Pre-pass scanner: Maps every individual driven bit to its Parent Bus.
+    Returns a dict: { bit_id: tuple_of_parent_bits }
+    """
+    registry = {}
+
+    # 1. Module inputs drive bits into the circuit
+    for port_name, port_data in module_data.get("ports", {}).items():
+        if port_data.get("direction") == "input":
+            bits = tuple(port_data.get("bits", []))
+            for b in bits:
+                registry[b] = bits
+
+    # 2. Cell outputs drive bits into the circuit
+    for cell_name, cell_data in module_data.get("cells", {}).items():
+        c_type = cell_data["type"]
+        conns = cell_data.get("connections", {})
+
+        # Map standard Yosys primitives to their output ports
+        output_ports = []
+        if c_type in ["$add", "$sub", "$and", "$or", "$xor", "$not", "$eq", "$gt", "$lt", 
+                      "$mux", "$pmux", "$logic_not", "$logic_and", "$logic_or", 
+                      "$reduce_or", "$reduce_bool"]:
+            output_ports = ["Y"]
+        elif c_type in ["$mem", "$mem_v2"]:
+            output_ports = ["RD_DATA"]
+        elif c_type == "$dff":
+            output_ports = ["Q"]
+        elif not c_type.startswith("$") or c_type.startswith("$paramod$"):
+            # It's a subcircuit; look up its specific output ports in the netlist
+            sub_mod = netlist.get("modules", {}).get(c_type, {})
+            for p_name, p_data in sub_mod.get("ports", {}).items():
+                if p_data.get("direction") == "output":
+                    output_ports.append(p_name)
+
+        # Record the bits driven by these output ports
+        for p in output_ports:
+            if p in conns:
+                bits = tuple(conns[p])
+                for b in bits:
+                    registry[b] = bits
+
+    return registry
+
 def get_wire(bits_array, current_module_name: str = "Main") -> Wire:
     bitsize = len(bits_array)
     if bitsize == 0:
@@ -564,6 +609,89 @@ def get_wire(bits_array, current_module_name: str = "Main") -> Wire:
 
     return Wire(unique_id, bitsize)
 
+def resolve_bus(compiler: CircuitBuilder, grid, raw_bits: List[int], current_module: str, bit_registry: dict) -> Wire:
+    """
+    Intercepts an input bus request. Physically synthesizes Splitters/Mergers
+    on the grid if the bus is fractured (sliced or mixed with constants).
+    """
+    if not raw_bits:
+        return Wire(None, 0)
+
+    # 1. Pure Constant Check (Handled by your existing logic)
+    if all(isinstance(b, str) for b in raw_bits):
+        return get_wire(raw_bits, current_module)
+
+    # 2. Segment the requested bus into strictly contiguous chunks
+    chunks = []
+    current_chunk = []
+    current_parent = None
+
+    for b in raw_bits:
+        parent = bit_registry.get(b, "CONSTANT") if isinstance(b, int) else "CONSTANT"
+
+        is_contiguous = False
+        if parent != "CONSTANT" and current_parent == parent and current_chunk:
+            # Check if this bit is perfectly adjacent to the previous bit in the parent array
+            prev_idx = parent.index(current_chunk[-1])
+            curr_idx = parent.index(b)
+            if curr_idx == prev_idx + 1:
+                is_contiguous = True
+
+        if parent == current_parent and (parent == "CONSTANT" or is_contiguous):
+            current_chunk.append(b)
+        else:
+            if current_chunk:
+                chunks.append((current_parent, current_chunk))
+            current_chunk = [b]
+            current_parent = parent
+
+    if current_chunk:
+        chunks.append((current_parent, current_chunk))
+
+    # 3. Pure Parent Check: No hardware needed!
+    if len(chunks) == 1:
+        parent, chunk = chunks[0]
+        if parent == tuple(raw_bits):
+            return get_wire(raw_bits, current_module)
+
+    # 4. Synthesize Physical Hardware for Fractured Buses
+    chunk_wires = []
+    for parent, chunk in chunks:
+        if parent == "CONSTANT":
+            chunk_wires.append(get_wire(chunk, current_module))
+        elif len(chunk) == len(parent):
+            chunk_wires.append(get_wire(list(parent), current_module))
+        else:
+            # Sliced Bus: We must physically tap the Parent Bus
+            start_idx = parent.index(chunk[0])
+            end_idx = start_idx + len(chunk)
+
+            out_wires = []
+            if start_idx > 0:
+                out_wires.append(Wire(None, start_idx)) # Pre-chunk dummy drop
+
+            tap_wire = Wire(f"W_TAP_{chunk[0]}_to_{chunk[-1]}_{grid.x}_{grid.y}", len(chunk))
+            out_wires.append(tap_wire)
+
+            if end_idx < len(parent):
+                out_wires.append(Wire(None, len(parent) - end_idx)) # Post-chunk dummy drop
+
+            x, y = grid.next()
+            compiler.add_splitter(x, y, get_wire(list(parent), current_module), out_wires)
+            chunk_wires.append(tap_wire)
+
+    # 5. Merge Multiple Chunks together
+    if len(chunk_wires) > 1:
+        merged_label = "_".join(str(b) for b in raw_bits[:3]) # Shorten name to avoid massive strings
+        target_wire = Wire(f"W_MERGE_{merged_label}_{grid.x}_{grid.y}", len(raw_bits))
+
+        x, y = grid.next()
+        # The Splitter is bidirectional. Connecting target to in_bus and chunks to out_wires merges them.
+        compiler.add_splitter(x, y, target_wire, chunk_wires)
+        return target_wire
+
+    return chunk_wires[0]
+
 
 class GridAllocator:
     def __init__(self, x_init, y_init, x_spacing, y_spacing, x_max):
@@ -584,13 +712,14 @@ class GridAllocator:
         return curr_x, curr_y
 
 
-def get_padded_wire(compiler: CircuitBuilder, grid: GridAllocator, raw_bits: List[int],
-                    target_width: int, current_module: str, is_signed: bool = False) -> Wire:
+def get_padded_wire(compiler: CircuitBuilder, grid: GridAllocator, original_wire: Wire,
+                    target_width: int, is_signed: bool = False) -> Wire:
     """
     Checks if a bit array needs padding. If so, physically spawns a Bit Extender 
     on the canvas to safely bridge the original wire to the required width.
     """
-    original_wire = get_wire(raw_bits, current_module)
+    if not original_wire or original_wire.bitsize == 0:
+        return original_wire
 
     if original_wire.bitsize >= target_width:
         return original_wire
@@ -637,10 +766,15 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
 
         print(f"[*] Compiling module: {module_name}")
 
+        bit_registry = build_bit_registry(module_data, netlist)
+
         compiler.set_active_circuit(safe_mod_name)
 
-        # Helper to wrap get_wire with the current module scope
+        # Helper for Outputs (Directly defines parent buses)
         def gw(bits): return get_wire(bits, safe_mod_name)
+
+        # Helper for Inputs (Intercepts requests and resolves split buses)
+        def res(bits): return resolve_bus(compiler, grid, bits, safe_mod_name, bit_registry)
     
 
         current_x = PIN_X_INIT
@@ -679,11 +813,11 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
                 out_wires = []
 
                 for p_name, p_data in sub_ports.items():
-                    wire = gw(conns.get(p_name, []))
+                    bits = conns.get(p_name, [])
                     if p_data.get("direction") == "input":
-                        in_wires.append(wire)
+                        in_wires.append(res(bits))
                     elif p_data.get("direction") == "output":
-                        out_wires.append(wire)
+                        out_wires.append(gw(bits))
 
                 compiler.add_subcircuit(
                     x=x, y=y,
@@ -697,10 +831,13 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
                 target_width = out_wire.bitsize
 
                 ci_conn = conns.get("C", [])
-                cin_wire = gw(ci_conn if ci_conn else ['0']) 
+                cin_wire = res(ci_conn if ci_conn else ['0']) 
                 
-                a_wire = get_padded_wire(compiler, grid, conns.get("A", []), target_width, safe_mod_name)
-                b_wire = get_padded_wire(compiler, grid, conns.get("B", []), target_width, safe_mod_name)
+                a_bits = res(conns.get("A", []))
+                b_bits = res(conns.get("B", []))
+
+                a_wire = get_padded_wire(compiler, grid, a_bits, target_width)
+                b_wire = get_padded_wire(compiler, grid, b_bits, target_width)
 
                 peer = "AdderPeer" if c_type == "$add" else "SubtractorPeer"
                 compiler.add_arithmetic(
@@ -714,9 +851,11 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
                 out_wire = gw(conns.get("Y", []))
                 target_width = out_wire.bitsize
 
+                a_bits = res(conns.get("A", []))
+                b_bits = res(conns.get("B", []))
 
-                a_wire = get_padded_wire(compiler, grid, conns.get("A", []), target_width, safe_mod_name)
-                b_wire = get_padded_wire(compiler, grid, conns.get("B", []), target_width, safe_mod_name)
+                a_wire = get_padded_wire(compiler, grid, a_bits, target_width)
+                b_wire = get_padded_wire(compiler, grid, b_bits, target_width)
 
                 gate = c_type.replace("$", "").capitalize()
                 compiler.add_logic_gate(
@@ -727,7 +866,7 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
             elif c_type in ["$not"]:
                 compiler.add_not_gate(
                     x=x, y=y,
-                    in_a=gw(conns.get("A", [])),
+                    in_a=res(conns.get("A", [])),
                     out=gw(conns.get("Y", []))
                 )
 
@@ -735,13 +874,13 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
             elif c_type in ("$eq", "$gt", "$lt"):
                 out_wire = gw(conns.get("Y", []))
 
-                a_raw = conns.get("A", []) 
-                b_raw = conns.get("B", []) 
+                a_raw = res(conns.get("A", [])) 
+                b_raw = res(conns.get("B", []) )
 
-                target_width = max(len(a_raw), len(b_raw))
+                target_width = max(a_raw.bitsize, b_raw.bitsize)
                 
-                a_wire = get_padded_wire(compiler, grid, a_raw, target_width, safe_mod_name)
-                b_wire = get_padded_wire(compiler, grid, b_raw, target_width, safe_mod_name)
+                a_wire = get_padded_wire(compiler, grid, a_raw, target_width)
+                b_wire = get_padded_wire(compiler, grid, b_raw, target_width)
 
                 out_eq = out_wire if c_type == "$eq" else None
                 out_gt = out_wire if c_type == "$gt" else None
@@ -758,8 +897,8 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
                 )
 
             elif c_type in ["$reduce_bool", "$reduce_or"]:
-                a_wire = gw(conns.get("A", []))
-                zero_bus = gw(['0'] * a_wire.bitsize)
+                a_wire = res(conns.get("A", []))
+                zero_bus = res(['0'] * a_wire.bitsize)
                 compiler.add_comparator(
                     x=x, y=y,
                     in_a=a_wire,
@@ -769,8 +908,8 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
                 )
 
             elif c_type == "$logic_not":
-                a_wire = gw(conns.get("A", []))
-                zero_bus = gw(['0'] * a_wire.bitsize)
+                a_wire = res(conns.get("A", []))
+                zero_bus = res(['0'] * a_wire.bitsize)
 
                 # Logical NOT: Is A exactly equal to 0?
                 compiler.add_comparator(
@@ -781,8 +920,8 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
                 )
 
             elif c_type in ["$logic_and", "$logic_or"]:
-                a_wire = gw(conns.get("A", []))
-                b_wire = gw(conns.get("B", []))
+                a_wire = res(conns.get("A", []))
+                b_wire = res(conns.get("B", []))
                 y_wire = gw(conns.get("Y", []))
                 
                 gate_type = "And" if c_type == "$logic_and" else "Or"
@@ -791,7 +930,7 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
                 a_is_true = Wire(f"L_{gate_type.upper()}_A_GT0_{x}_{y}", 1)
                 b_is_true = Wire(f"L_{gate_type.upper()}_B_GT0_{x}_{y}", 1)
 
-                zero_bus = gw(['0'] * a_wire.bitsize)
+                zero_bus = res(['0'] * a_wire.bitsize)
 
                 # 1. Compare A > 0 (Unsigned)
                 compiler.add_comparator(
@@ -802,7 +941,7 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
                     is_unsigned=True
                 )
 
-                zero_bus = gw(['0'] * b_wire.bitsize)
+                zero_bus = res(['0'] * b_wire.bitsize)
                 
                 x, y = grid.next()
                 
@@ -830,14 +969,14 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
             elif c_type == "$mux":
                 compiler.add_mux(
                     x=x, y=y, sel_bits=1,
-                    in_wires=[gw(conns.get("A", [])), gw(conns.get("B", []))],
-                    in_sel=gw(conns.get("S", [])),
+                    in_wires=[res(conns.get("A", [])), res(conns.get("B", []))],
+                    in_sel=res(conns.get("S", [])),
                     out=gw(conns.get("Y", []))
                 )
 
             elif c_type == "$pmux":
                 # ONE-HOT CASCADING RESOLVER
-                a_wire = gw(conns.get("A", []))
+                a_wire = res(conns.get("A", []))
                 b_flat = conns.get("B", [])
                 s_flat = conns.get("S", [])
                 out_wire = gw(conns.get("Y", []))
@@ -849,8 +988,8 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
                     b_chunk = b_flat[i*width : (i+1)*width]
                     s_chunk = [s_flat[i]]
 
-                    b_wire = gw(b_chunk)
-                    s_wire = gw(s_chunk)
+                    b_wire = res(b_chunk)
+                    s_wire = res(s_chunk)
 
                     is_last = (i == len(s_flat) - 1)
                     # Temporary wire connecting this MUX to the next one
@@ -884,32 +1023,32 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
                 rd_en_array = conns.get("RD_EN", [])
 
 
-                str_wire = gw([wr_en_array[0]] if wr_en_array else [])
-                ld_wire = gw([rd_en_array[0]] if rd_en_array else ['1']) # Default LD to 1 if missing
+                str_wire = res([wr_en_array[0]] if wr_en_array else [])
+                ld_wire = res([rd_en_array[0]] if rd_en_array else ['1']) # Default LD to 1 if missing
 
                 # Standard Single-Port RAM (Your standard Instruction/Data memory)
                 compiler.add_ram(
                     x=x, y=y,
                     addr_bits=addr_bits,
                     data_bits=width,
-                    in_addr=gw(rd_addr_flat), 
-                    in_data=gw(wr_data_flat),
+                    in_addr=res(rd_addr_flat), 
+                    in_data=res(wr_data_flat),
                     out_data=gw(rd_data_flat),
-                    in_clk=gw(conns.get("WR_CLK", [])),
-                    in_en=gw(['1']), # Always Tie Enable to High
+                    in_clk=res(conns.get("WR_CLK", [])),
+                    in_en=res(['1']), # Always Tie Enable to High
                     in_ld=ld_wire,
                     in_str=str_wire,
-                    in_clr=gw(['0'])  # Always Tie Reset to Low
+                    in_clr=res(['0'])  # Always Tie Reset to Low
                 )
             # --- REGISTERS (D-FLIP-FLOPS) ---
             elif c_type == "$dff":
                 compiler.add_register(
                      x=x, y=y,
-                     in_d=gw(conns.get("D", [])),
+                     in_d=res(conns.get("D", [])),
                      out_q=gw(conns.get("Q", [])),
-                     in_clk=gw(conns.get("CLK", [])),
-                     in_en=gw(['1']),  # CircuitSim needs Enable HIGH to write
-                     in_clr=gw(['0'])  # CircuitSim needs Clear LOW to avoid wiping memory
+                     in_clk=res(conns.get("CLK", [])),
+                     in_en=res(['1']),  # CircuitSim needs Enable HIGH to write
+                     in_clr=res(['0'])  # CircuitSim needs Clear LOW to avoid wiping memory
                 )
             else:
                 print(f"[!] Unmapped component: {c_type}")
