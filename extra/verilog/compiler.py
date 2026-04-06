@@ -190,6 +190,10 @@ class CircuitBuilder:
                 "Bitsize": str(out.bitsize)
             }
         )
+
+        if cin is None:
+            print("[!] POTENTIAL ERROR: Adder cell requires a cin (even set to constant 0) or else output is floating")
+
         self.add_tunnel(x - 6, y,     "EAST",  in_a)
         self.add_tunnel(x - 6, y + 2, "EAST",  in_b)
         self.add_tunnel(x + 4, y + 1, "WEST",  out)
@@ -497,8 +501,10 @@ class CircuitBuilder:
 
                         props["Label"] = label_map[old_label]
 
-    def save(self, filename: str):
-        self._remap_labels()
+    def save(self, filename: str, debug_labels: bool = False):
+        # Temporarily Disable for debugging
+        if not debug_labels:
+            self._remap_labels()
 
         circuits_list = []
         for name, data in self.circuits.items():
@@ -558,7 +564,27 @@ def get_wire(bits_array, current_module_name: str = "Main") -> Wire:
 
     return Wire(unique_id, bitsize)
 
-def get_padded_wire(compiler: CircuitBuilder, x: int, y: int, raw_bits: List[int],
+
+class GridAllocator:
+    def __init__(self, x_init, y_init, x_spacing, y_spacing, x_max):
+        self.x = x_init
+        self.y = y_init
+        self.x_init = x_init
+        self.x_spacing = x_spacing
+        self.y_spacing = y_spacing
+        self.x_max = x_max
+
+    def next(self):
+        """Returns the next available (x, y) coordinate and advances the internal grid cursor."""
+        curr_x, curr_y = self.x, self.y
+        self.x += self.x_spacing
+        if self.x > self.x_max:
+            self.x = self.x_init
+            self.y += self.y_spacing
+        return curr_x, curr_y
+
+
+def get_padded_wire(compiler: CircuitBuilder, grid: GridAllocator, raw_bits: List[int],
                     target_width: int, current_module: str, is_signed: bool = False) -> Wire:
     """
     Checks if a bit array needs padding. If so, physically spawns a Bit Extender 
@@ -573,12 +599,17 @@ def get_padded_wire(compiler: CircuitBuilder, x: int, y: int, raw_bits: List[int
     padded_label = f"{original_wire.label}_EXT_{target_width}"
     padded_wire = Wire(padded_label, target_width)
 
+    
+    x, y = grid.next()
+
     # Instruct the compiler to build the physical bridging component
     compiler.add_bit_extender(x, y, original_wire, padded_wire, is_signed)
 
-    print(f"Adding Padding for {original_wire.label} to {padded_wire.label}")
+    # print(f"Adding Padding for {original_wire.label} to {padded_wire.label}")
 
     return padded_wire
+
+
 
 def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
     """
@@ -624,6 +655,8 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
 
         current_x = X_INIT 
         current_y = Y_INIT
+
+        grid = GridAllocator(X_INIT, Y_INIT, X_SPACING, Y_SPACING, X_MAX)
         
         cells = module_data.get("cells", {})
 
@@ -631,8 +664,11 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
             c_type = cell_data["type"]
             conns = cell_data.get("connections", {})
 
+            # This is the first time, but it might be reassigned multiple times
+            x,y = grid.next() 
+
             # --- ARITHMETIC ---
-            if not c_type.startswith("$"):
+            if not c_type.startswith("$") or c_type.startswith("$paramod$"):
                 sub_name = c_type.split('\\')[-1].replace('$', '')
 
                 # Fetch port definitions from the netlist to separate inputs from outputs
@@ -650,7 +686,7 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
                         out_wires.append(wire)
 
                 compiler.add_subcircuit(
-                    x=current_x, y=current_y,
+                    x=x, y=y,
                     subcircuit_name=sub_name,
                     in_wires=in_wires,
                     out_wires=out_wires
@@ -659,14 +695,18 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
             elif c_type in ["$add", "$sub"]:
                 out_wire = gw(conns.get("Y", []))
                 target_width = out_wire.bitsize
+
+                ci_conn = conns.get("C", [])
+                cin_wire = gw(ci_conn if ci_conn else ['0']) 
                 
-                a_wire = get_padded_wire(compiler, current_x, current_y - 10, conns.get("A", []), target_width, safe_mod_name)
-                b_wire = get_padded_wire(compiler, current_x, current_y + 10, conns.get("B", []), target_width, safe_mod_name)
+                a_wire = get_padded_wire(compiler, grid, conns.get("A", []), target_width, safe_mod_name)
+                b_wire = get_padded_wire(compiler, grid, conns.get("B", []), target_width, safe_mod_name)
 
                 peer = "AdderPeer" if c_type == "$add" else "SubtractorPeer"
                 compiler.add_arithmetic(
-                    peer_type=peer, x=current_x, y=current_y,
-                    in_a=a_wire, in_b=b_wire, out=out_wire
+                    peer_type=peer, x=x, y=y,
+                    in_a=a_wire, in_b=b_wire, out=out_wire,
+                    cin=cin_wire
                 )
 
                 # --- LOGIC GATES ---
@@ -674,24 +714,25 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
                 out_wire = gw(conns.get("Y", []))
                 target_width = out_wire.bitsize
 
-                a_wire = get_padded_wire(compiler, current_x, current_y - 10, conns.get("A", []), target_width, safe_mod_name)
-                b_wire = get_padded_wire(compiler, current_x, current_y + 10, conns.get("B", []), target_width, safe_mod_name)
+
+                a_wire = get_padded_wire(compiler, grid, conns.get("A", []), target_width, safe_mod_name)
+                b_wire = get_padded_wire(compiler, grid, conns.get("B", []), target_width, safe_mod_name)
 
                 gate = c_type.replace("$", "").capitalize()
                 compiler.add_logic_gate(
-                    gate_type=gate, x=current_x, y=current_y,
+                    gate_type=gate, x=x, y=y,
                     in_a=a_wire, in_b=b_wire, out=out_wire
                 )
 
             elif c_type in ["$not"]:
                 compiler.add_not_gate(
-                    x=current_x, y=current_y,
+                    x=x, y=y,
                     in_a=gw(conns.get("A", [])),
                     out=gw(conns.get("Y", []))
                 )
 
                 # --- COMPARATORS ---
-            elif c_type == "$eq":
+            elif c_type in ("$eq", "$gt", "$lt"):
                 out_wire = gw(conns.get("Y", []))
 
                 a_raw = conns.get("A", []) 
@@ -699,19 +740,28 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
 
                 target_width = max(len(a_raw), len(b_raw))
                 
-                a_wire = get_padded_wire(compiler, current_x, current_y - 10, a_raw, target_width, safe_mod_name)
-                b_wire = get_padded_wire(compiler, current_x, current_y + 10, b_raw, target_width, safe_mod_name)
+                a_wire = get_padded_wire(compiler, grid, a_raw, target_width, safe_mod_name)
+                b_wire = get_padded_wire(compiler, grid, b_raw, target_width, safe_mod_name)
+
+                out_eq = out_wire if c_type == "$eq" else None
+                out_gt = out_wire if c_type == "$gt" else None
+                out_lt = out_wire if c_type == "$lt" else None
+
+                params = cell_data.get("parameters", {})
+                is_signed = params.get("A_SIGNED", "0") == "1"
 
                 compiler.add_comparator(
-                    x=current_x, y=current_y,
-                    in_a=a_wire, in_b=b_wire, out_eq=out_wire
+                    x=x, y=y,
+                    in_a=a_wire, in_b=b_wire,
+                    out_eq=out_eq, out_greater=out_gt, out_less=out_lt,
+                    is_unsigned=not is_signed
                 )
 
-            elif c_type == "$reduce_bool":
+            elif c_type in ["$reduce_bool", "$reduce_or"]:
                 a_wire = gw(conns.get("A", []))
                 zero_bus = gw(['0'] * a_wire.bitsize)
                 compiler.add_comparator(
-                    x=current_x, y=current_y,
+                    x=x, y=y,
                     in_a=a_wire,
                     in_b=zero_bus, # Compare to 0
                     out_greater=gw(conns.get("Y", [])),
@@ -724,51 +774,53 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
 
                 # Logical NOT: Is A exactly equal to 0?
                 compiler.add_comparator(
-                    x=current_x, y=current_y,
+                    x=x, y=y,
                     in_a=a_wire,
                     in_b=zero_bus,
                     out_eq=gw(conns.get("Y", []))
                 )
 
-            elif c_type == "$logic_and":
+            elif c_type in ["$logic_and", "$logic_or"]:
                 a_wire = gw(conns.get("A", []))
                 b_wire = gw(conns.get("B", []))
                 y_wire = gw(conns.get("Y", []))
+                
+                gate_type = "And" if c_type == "$logic_and" else "Or"
 
                 # Intermediate wires
-                a_is_true = Wire(f"L_AND_A_GT0_{current_x}_{current_y}", 1)
-                b_is_true = Wire(f"L_AND_B_GT0_{current_x}_{current_y}", 1)
+                a_is_true = Wire(f"L_{gate_type.upper()}_A_GT0_{x}_{y}", 1)
+                b_is_true = Wire(f"L_{gate_type.upper()}_B_GT0_{x}_{y}", 1)
 
                 zero_bus = gw(['0'] * a_wire.bitsize)
 
                 # 1. Compare A > 0 (Unsigned)
                 compiler.add_comparator(
-                    x=current_x, y=current_y,
+                    x=x, y=y,
                     in_a=a_wire,
                     in_b=zero_bus,
                     out_greater=a_is_true,
                     is_unsigned=True
                 )
 
-                current_x += X_SPACING
-
-
                 zero_bus = gw(['0'] * b_wire.bitsize)
-
+                
+                x, y = grid.next()
+                
                 # 2. Compare B > 0 (Unsigned)
                 compiler.add_comparator(
-                    x=current_x, y=current_y,
+                    x=x, y=y,
                     in_a=b_wire,
                     in_b=zero_bus,
                     out_greater=b_is_true,
                     is_unsigned=True
                 )
 
-                current_x += X_SPACING
+                x,y = grid.next()
 
                 # 3. A is True AND B is True
                 compiler.add_logic_gate(
-                    gate_type="And", x=current_x, y=current_y - (Y_SPACING // 2),
+                    gate_type=gate_type,
+                    x=x, y=y - (Y_SPACING // 2),
                     in_a=a_is_true,
                     in_b=b_is_true,
                     out=y_wire
@@ -777,7 +829,7 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
                 # --- MULTIPLEXERS ---
             elif c_type == "$mux":
                 compiler.add_mux(
-                    x=current_x, y=current_y, sel_bits=1,
+                    x=x, y=y, sel_bits=1,
                     in_wires=[gw(conns.get("A", [])), gw(conns.get("B", []))],
                     in_sel=gw(conns.get("S", [])),
                     out=gw(conns.get("Y", []))
@@ -802,19 +854,19 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
 
                     is_last = (i == len(s_flat) - 1)
                     # Temporary wire connecting this MUX to the next one
-                    mux_out = out_wire if is_last else Wire(f"PMUX_TEMP_{i}_{current_x}_{current_y}", width)
+                    mux_out = out_wire if is_last else Wire(f"PMUX_TEMP_{i}_{x}_{y}", width)
 
                     compiler.add_mux(
-                        x=current_x, y=current_y, sel_bits=1,
+                        x=x, y=y, sel_bits=1,
                         in_wires=[current_fallback, b_wire],
                         in_sel=s_wire,
                         out=mux_out
                     )
                     current_fallback = mux_out
-                    current_x += X_SPACING
-                    if current_x > X_MAX:
-                        current_x = X_INIT
-                        current_y += Y_SPACING
+
+                    if i < len(s_flat) - 1:
+                        # Not last iteration
+                        x, y = grid.next()
 
             # --- MEMORY & REGISTER FILES ---
             elif c_type in ["$mem", "$mem_v2"]:
@@ -837,7 +889,7 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
 
                 # Standard Single-Port RAM (Your standard Instruction/Data memory)
                 compiler.add_ram(
-                    x=current_x, y=current_y,
+                    x=x, y=y,
                     addr_bits=addr_bits,
                     data_bits=width,
                     in_addr=gw(rd_addr_flat), 
@@ -852,7 +904,7 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
             # --- REGISTERS (D-FLIP-FLOPS) ---
             elif c_type == "$dff":
                 compiler.add_register(
-                     x=current_x, y=current_y,
+                     x=x, y=y,
                      in_d=gw(conns.get("D", [])),
                      out_q=gw(conns.get("Q", [])),
                      in_clk=gw(conns.get("CLK", [])),
@@ -861,11 +913,6 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
                 )
             else:
                 print(f"[!] Unmapped component: {c_type}")
-
-            current_x += X_SPACING
-            if current_x > X_MAX:
-                current_x = X_INIT
-                current_y += Y_SPACING
 
     # ========================================================
     # FINAL STEP: Spawn all Constant values detected by Yosys
@@ -898,4 +945,4 @@ if __name__ == "__main__":
     parse_yosys_netlist(compiler, "build/netlist.json")
 
     # 2. Forge the Signature and Save!
-    compiler.save("build/cpu.sim")
+    compiler.save("build/cpu.sim", debug_labels=False)

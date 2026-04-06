@@ -27,9 +27,10 @@ test: verilog
 	iverilog -g2012 -o $(OUT) $(V_SRCS) $(TB)
 	@echo "--- Running Simulation ---"
 	vvp $(OUT)
+
+runtest: test
 	@echo "--- Opening GTKWave ---"
 	gtkwave ./build/waves.vcd layout.gtkw
-
 
 # --- Step 2: Yosys synthesis ---
 netlist: verilog
@@ -41,6 +42,8 @@ netlist: verilog
 sim: netlist
 	@echo "--- Generating CircuitSim file ---"
 	python compiler.py $(NETLIST) $(SIM)
+
+runsim: sim
 	@echo "--- Opening CircuitSim ---"
 	CircuitSim $(SIM)
 
