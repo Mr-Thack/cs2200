@@ -14,20 +14,22 @@ SIM = build/cpu.sim
 # --- Default ---
 all: test
 
-# --- Simulation (SystemVerilog directly) ---
-test:
-	@echo "--- Compiling Simulation ---"
-	iverilog -g2012 -o $(OUT) $(SV_SRCS) $(TB)
-	@echo "--- Running Simulation ---"
-	vvp $(OUT)
-	@echo "--- Opening GTKWave ---"
-	gtkwave ./build/waves.vcd layout.gtkw
-
 # --- Step 1: Convert SV → Verilog ---
 verilog:
 	@echo "--- Converting SystemVerilog to Verilog ---"
 	mkdir -p build
 	sv2v $(SV_SRCS) -w $(V_SRCS)
+	python split_wide.py $(V_SRCS) --types $(TYPES)
+
+# --- Simulation (SystemVerilog directly) ---
+test: verilog
+	@echo "--- Compiling Simulation ---"
+	iverilog -g2012 -o $(OUT) $(V_SRCS) $(TB)
+	@echo "--- Running Simulation ---"
+	vvp $(OUT)
+	@echo "--- Opening GTKWave ---"
+	gtkwave ./build/waves.vcd layout.gtkw
+
 
 # --- Step 2: Yosys synthesis ---
 netlist: verilog

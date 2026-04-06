@@ -42,8 +42,6 @@ package types;
         immediate_value imm;
     } instruction_data;
 
-
-
     typedef struct packed {
         logic [31:0] pc_plus_1;
         instruction_data instruction;
@@ -67,14 +65,14 @@ package types;
     // Both would work, and I don't think there's a major improvement either way
     typedef struct packed {
         opcode_t opcode;
-        logic [3:0] dr;
         logic [31:0] address;
         logic [31:0] data;
+        logic [3:0] dr;
     } ebuf_data;
 
     typedef struct packed {
-        logic [3:0] dr;
         logic [31:0] data;
+        logic [3:0] dr;
     } mbuf_data;
 
 endpackage
