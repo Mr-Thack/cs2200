@@ -120,7 +120,7 @@ class CircuitBuilder:
 
         # Connect input wires (offset to the left side)
         for i, wire in enumerate(in_wires):
-            self.add_tunnel(x - 7, y + i, "EAST", wire)
+            self.add_tunnel(x - 6, y + i, "EAST", wire)
 
         # Connect output wires (offset to the right side)
         for i, wire in enumerate(out_wires):
