@@ -29,6 +29,8 @@ logic [3:0] write_reg_dest;
 logic [31:0] write_reg_data;
 
 
+
+
 fbuf_data fbuf_in, fbuf_out;
 dbuf_data dbuf_in, dbuf_out;
 ebuf_data ebuf_in, ebuf_out;
@@ -92,6 +94,19 @@ assign debug_pc = PC;
 assign halt_flag = halt_now;
 assign out_stat_cycles = stat_cycles;
 
+// ********************* //
+// INLINED MEMORY ARRAYS //
+// ********************* //
+localparam MEM_SIZE = 2**16;
+
+(* nomem2reg *) logic [31:0] IMEM [MEM_SIZE];
+(* nomem2reg *) logic [31:0] DMEM [MEM_SIZE];
+
+// Load from Init ROM
+initial begin
+    $readmemh("../pow.hex", IMEM);
+    $readmemh("../pow.hex", DMEM);
+end
 
 // *********** //
 // FETCH STAGE //
@@ -100,14 +115,9 @@ assign out_stat_cycles = stat_cycles;
 // This wire is the output from imem
 logic [31:0] instruction_read_line;
 
-mem #(.INIT("../pow.hex")) imem (
-    .clk(clk),
-    .rst(rst),
-    .we(1'b0),
-    .addr(PC[15:0]),
-    .write_data('0),
-    .read_data(instruction_read_line)
-);
+
+assign instruction_read_line = IMEM[PC[15:0]];
+
 
 always_comb begin
     fbuf_in.pc_plus_1 = PC + 1;
@@ -429,19 +439,18 @@ logic we_dmem;
 logic [31:0] data_read_line;
 logic [31:0] data_write_dmem;
 
+assign data_read_line = DMEM[ebuf_out.address[15:0]];
+
 always_comb begin
     we_dmem = (ebuf_out.opcode == OP_SW);
     data_write_dmem = ebuf_out.data;
 end
 
-mem #(.INIT("../pow.hex")) dmem (
-    .clk(clk),
-    .rst(rst),
-    .we(we_dmem),
-    .addr(ebuf_out.address[15:0]),
-    .write_data(data_write_dmem),
-    .read_data(data_read_line)
-);
+always_ff @(posedge clk) begin
+    if (we_dmem) begin
+        DMEM[ebuf_out.address[15:0]] <= data_write_dmem;
+    end
+end
 
 always_comb begin
     mbuf_in.dr = ebuf_out.dr;
