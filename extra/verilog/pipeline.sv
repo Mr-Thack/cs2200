@@ -29,8 +29,6 @@ logic [3:0] write_reg_dest;
 logic [31:0] write_reg_data;
 
 
-
-
 fbuf_data fbuf_in, fbuf_out;
 dbuf_data dbuf_in, dbuf_out;
 ebuf_data ebuf_in, ebuf_out;

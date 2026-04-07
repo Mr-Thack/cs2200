@@ -1076,7 +1076,6 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
             const_y += 30
 
 
-
 if __name__ == "__main__":
     compiler = CircuitBuilder()
 
@@ -1084,4 +1083,4 @@ if __name__ == "__main__":
     parse_yosys_netlist(compiler, "build/netlist.json")
 
     # 2. Forge the Signature and Save!
-    compiler.save("build/cpu.sim", debug_labels=False)
+    compiler.save("build/cpu.sim", debug_labels=True)
