@@ -380,6 +380,10 @@ class CircuitBuilder:
         Calculates the physical (dx, dy) offsets for pins and constants.
         CircuitSim wraps hex text every 8 bits, expanding the component bounding box.
         """
+
+        dx = 0
+        dy = 0
+
         # Y Offset: connection port shifts down as lines wrap
         if bitsize <= 8:
             dy = 0
@@ -390,12 +394,13 @@ class CircuitBuilder:
         else:
             dy = 2
 
-        # X Offset: Output pins anchor on the right, so left-port dx is constant (-7).
+        # X Offset: Output pins anchor on the right, so left-port dx is constant.
+        # But it acts weird on output pins less than 8 bits
         # Input pins/Constants anchor on the left, so right-port dx grows with text width.
         if is_output:
             dx = -6
         else:
-            dx = 8
+            dx = 8 
 
         # This part calculates offset due to line size
         # whereas the previous one calculated offset due to height
@@ -403,13 +408,12 @@ class CircuitBuilder:
             offset = bitsize - 8
             
             if bitsize == 1:
-                offset += 1
+                offset += 1 
 
             if is_output:
-                dx -= offset
+                dx = offset
             else:
                 dx += offset
-
 
         return dx, dy
 
@@ -450,6 +454,9 @@ class CircuitBuilder:
         if is_input:
             self.add_tunnel(x + dx, y + dy, "WEST", wire)
         else:
+            if wire.bitsize == 1:
+                print(f"Added 1 Pin Output @{x},{y}")
+                print(f"Offseted by {dx},{dy}")
             self.add_tunnel(x + dx, y + dy, "EAST", wire)
 
     # ==========================================
@@ -461,19 +468,30 @@ class CircuitBuilder:
 
     def _generate_signature(self, circuits_dict: list) -> str:
 
-        json_str = json.dumps(circuits_dict, indent=2)
+        json_str = json.dumps(circuits_dict, indent=2).replace("'", "\\u0027")
 
         file_data = "null" + json_str.replace('\r\n', '\n')
+        print("File Data:")
+        print(file_data)
+
         file_data_hash = self._sha256ify(file_data)
+        print("File Data Hash:", file_data_hash)
 
         timestamp = str(int(time.time() * 1000))
 
         raw_block_string = "" + file_data_hash + timestamp + ""
+        print("Block Metadata:", raw_block_string)
+
         current_hash = self._sha256ify(raw_block_string)
+        print("Block Metadata Hash:", current_hash)
 
         final_string = f"\t{current_hash}\t{timestamp}\t{file_data_hash}"
+        print("Final String:", final_string)
 
-        return base64.b64encode(final_string.encode('utf-8')).decode('utf-8')
+        signature = base64.b64encode(final_string.encode('utf-8')).decode('utf-8')
+        print("Signature:", signature)
+
+        return signature
 
     def _remap_labels(self):
         """
@@ -527,8 +545,11 @@ class CircuitBuilder:
             "revisionSignatures": [signature]
         }
 
+        final_json_str = json.dumps(final_output, indent=2).replace("'", "\\u0027")
+
         with open(filename, 'w', encoding='utf-8') as f:
-            json.dump(final_output, f, indent=2)
+            f.write(final_json_str)
+
 
         total_components = sum(len(c["components"]) for c in self.circuits.values())
         print(f"[*] Success: Compiled {total_components} components across {len(self.circuits)} circuits to {filename}")
@@ -1053,7 +1074,7 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
                 str_wire = res([wr_en_array[0]] if wr_en_array else [])
                 ld_wire = res([rd_en_array[0]] if rd_en_array else ['1']) # Default LD to 1 if missing
                 
-                print("Writing Memory with label:", clean_label)
+                # print("Writing Memory with label:", clean_label)
 
                 # Standard Single-Port RAM (Your standard Instruction/Data memory)
                 compiler.add_ram(
@@ -1077,7 +1098,7 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
 
                 final_label = reverse_netnames.get(q_bits, clean_label)
 
-                print("$dff with:", final_label)
+                # print("$dff with:", final_label)
                 compiler.add_register(
                      x=x, y=y,
                      in_d=res(conns.get("D", [])),
