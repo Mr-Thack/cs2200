@@ -129,14 +129,15 @@ class CircuitBuilder:
 
     def add_ram(self, x: int, y: int, addr_bits: int, data_bits: int,
                 in_addr: Wire, in_data: Wire, out_data: Wire, in_clk: Wire,
-                in_en: Wire, in_ld: Wire, in_str: Wire, in_clr: Wire):
+                in_en: Wire, in_ld: Wire, in_str: Wire, in_clr: Wire,
+                label: str = ""):
         """Standard RAM block (Separate Load/Store Ports Active)"""
         self._add_raw_component(
             "com.ra4king.circuitsim.gui.peers.memory.RAMPeer", x, y,
             {
                 "Separate Load/Store Ports?": "Yes",
                 "Label location": "NORTH",
-                "Label": "",
+                "Label": label,
                 "Bitsize": str(data_bits),
                 "Address bits": str(addr_bits)
             }
@@ -287,13 +288,15 @@ class CircuitBuilder:
         self.add_tunnel(x - 2, y + 2, "NORTH", en)
         self.add_tunnel(x + 3, y, "WEST", out)
 
-    def add_register(self, x: int, y: int, in_d: Wire, out_q: Wire, in_en: Optional[Wire] = None, in_clk: Optional[Wire] = None, in_clr: Optional[Wire] = None):
+    def add_register(self, x: int, y: int, in_d: Wire, out_q: Wire,
+                     in_en: Optional[Wire] = None, in_clk: Optional[Wire] = None,
+                     in_clr: Optional[Wire] = None, label: str = ""):
         """Standard D-Flip-Flop Register."""
         self._add_raw_component(
             "com.ra4king.circuitsim.gui.peers.memory.RegisterPeer", x, y,
             {
                 "Label location": "NORTH",
-                "Label": "",
+                "Label": label,
                 "Bitsize": str(out_q.bitsize)
             }
         )
@@ -768,6 +771,26 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
 
         bit_registry = build_bit_registry(module_data, netlist)
 
+        # Yosys does not assign the name to the register;
+        # instead, it assigns the name (in the Verilog) to the output wire
+        # But, CircuitSim (or rather the auto grader) wants to see the register
+        reverse_netnames = {}
+        for net_name, net_data in module_data.get("netnames", {}).items():
+            if net_data.get("hide_name", 0) == 0 and not net_name.startswith("$"):
+                bits_tuple = tuple(net_data.get("bits", []))
+                # Strip the leading backslash Yosys adds to explicit names
+                clean_net_name = net_name.lstrip('\\')
+                
+                # Check for collisions (multiple cables coming from the same thing)
+                if bits_tuple in reverse_netnames:
+                    # Only write new net name if this one is "simpler"
+                    # ddfineed (arbitrarily as not being an array "[")
+                    if "[" in reverse_netnames[bits_tuple] and "[" not in clean_net_name:
+                        reverse_netnames[bits_tuple] = clean_net_name
+                else:
+                    reverse_netnames[bits_tuple] = clean_net_name
+        # print(reverse_netnames)
+
         compiler.set_active_circuit(safe_mod_name)
 
         # Helper for Outputs (Directly defines parent buses)
@@ -800,6 +823,10 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
 
             # This is the first time, but it might be reassigned multiple times
             x,y = grid.next() 
+
+            # Original Name in Verilog
+            clean_label = cell_name.lstrip('\\')
+            # print("Original Label Name:", cell_name)
 
             # --- ARITHMETIC ---
             if not c_type.startswith("$") or c_type.startswith("$paramod$"):
@@ -1025,6 +1052,8 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
 
                 str_wire = res([wr_en_array[0]] if wr_en_array else [])
                 ld_wire = res([rd_en_array[0]] if rd_en_array else ['1']) # Default LD to 1 if missing
+                
+                print("Writing Memory with label:", clean_label)
 
                 # Standard Single-Port RAM (Your standard Instruction/Data memory)
                 compiler.add_ram(
@@ -1038,17 +1067,25 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
                     in_en=res(['1']), # Always Tie Enable to High
                     in_ld=ld_wire,
                     in_str=str_wire,
-                    in_clr=res(['0'])  # Always Tie Reset to Low
+                    in_clr=res(['0']),  # Always Tie Reset to Low
+                    label=clean_label
+
                 )
             # --- REGISTERS (D-FLIP-FLOPS) ---
             elif c_type == "$dff":
+                q_bits = tuple(conns.get("Q", []))
+
+                final_label = reverse_netnames.get(q_bits, clean_label)
+
+                print("$dff with:", final_label)
                 compiler.add_register(
                      x=x, y=y,
                      in_d=res(conns.get("D", [])),
                      out_q=gw(conns.get("Q", [])),
                      in_clk=res(conns.get("CLK", [])),
                      in_en=res(['1']),  # CircuitSim needs Enable HIGH to write
-                     in_clr=res(['0'])  # CircuitSim needs Clear LOW to avoid wiping memory
+                     in_clr=res(['0']), # CircuitSim needs Clear LOW to avoid wiping memory
+                     label=final_label
                 )
             else:
                 print(f"[!] Unmapped component: {c_type}")
@@ -1083,4 +1120,4 @@ if __name__ == "__main__":
     parse_yosys_netlist(compiler, "build/netlist.json")
 
     # 2. Forge the Signature and Save!
-    compiler.save("build/cpu.sim", debug_labels=True)
+    compiler.save("build/cpu.sim", debug_labels=False)
