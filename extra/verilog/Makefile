@@ -1,7 +1,7 @@
 # --- Variables ---
 TYPES = types.sv
 SRC = pipeline.sv
-COMPONENTS = alu.sv dprf.sv mem.sv
+COMPONENTS = alu.sv dprf.sv decode.sv mem.sv
 TB = test.sv
 
 SV_SRCS = $(TYPES) $(COMPONENTS) $(SRC)

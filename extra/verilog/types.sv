@@ -1,5 +1,6 @@
 package types;
 
+    typedef logic [31:0] word;
 
     // 3 bit Operation Code
     typedef enum logic [2:0] {
@@ -43,16 +44,16 @@ package types;
     } instruction_data;
 
     typedef struct packed {
-        logic [31:0] pc_plus_1;
+        word pc_plus_1;
         instruction_data instruction;
     } fbuf_data;
 
     typedef struct packed {
-        logic [31:0] pc_plus_1;
+        word pc_plus_1;
         opcode_t opcode;
-        logic [31:0] val1;
-        logic [31:0] val2;
-        logic [31:0] offset;
+        word val1;
+        word val2;
+        word offset;
         logic [3:0] dr;
         logic [3:0] sr1;
         logic [3:0] sr2;
@@ -65,13 +66,13 @@ package types;
     // Both would work, and I don't think there's a major improvement either way
     typedef struct packed {
         opcode_t opcode;
-        logic [31:0] address;
-        logic [31:0] data;
+        word address;
+        word data;
         logic [3:0] dr;
     } ebuf_data;
 
     typedef struct packed {
-        logic [31:0] data;
+        word data;
         logic [3:0] dr;
     } mbuf_data;
 

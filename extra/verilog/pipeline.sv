@@ -4,9 +4,9 @@ module pipeline(
     input logic clk,
     input logic rst,
 
-    output logic [31:0] debug_pc,
+    output word debug_pc,
     output logic halt_flag,
-    output logic [31:0] out_stat_cycles
+    output word out_stat_cycles
 );
 
 // Everything is defined left to right
@@ -15,7 +15,7 @@ module pipeline(
 // GLOBAL LOGIC //
 // ************ //
 
-logic [31:0] PC;
+word PC;
 
 // Stop forever for halting
 logic halt_now;
@@ -23,10 +23,10 @@ logic halt_now;
 logic stall_now;
 
 logic branch_true;
-logic [31:0] branch_target_line;
+word branch_target_line;
 
 logic [3:0] write_reg_dest;
-logic [31:0] write_reg_data;
+word write_reg_data;
 
 
 fbuf_data fbuf_in, fbuf_out;
@@ -54,12 +54,12 @@ end
 // ********** //
 // PERF STATS //
 // ********** //
-logic [31:0] stat_cycles;
-logic [31:0] stat_stalls;
-logic [31:0] stat_flushes;
-logic [31:0] stat_branches_seen;
-logic [31:0] stat_branches_correct;
-logic [31:0] stat_branches_incorrect;
+word stat_cycles;
+word stat_stalls;
+word stat_flushes;
+word stat_branches_seen;
+word stat_branches_correct;
+word stat_branches_incorrect;
 
 always_ff @(posedge clk) begin
     if (rst) begin
@@ -97,8 +97,8 @@ assign out_stat_cycles = stat_cycles;
 // ********************* //
 localparam MEM_SIZE = 2**16;
 
-(* nomem2reg *) logic [31:0] IMEM [MEM_SIZE];
-(* nomem2reg *) logic [31:0] DMEM [MEM_SIZE];
+(* nomem2reg *) word IMEM [MEM_SIZE];
+(* nomem2reg *) word DMEM [MEM_SIZE];
 
 // Load from Init ROM
 initial begin
@@ -111,7 +111,7 @@ end
 // *********** //
 
 // This wire is the output from imem
-logic [31:0] instruction_read_line;
+word instruction_read_line;
 
 
 assign instruction_read_line = IMEM[PC[15:0]];
@@ -135,94 +135,21 @@ end
 // DECODE STAGE //
 // ************ //
 
-instruction_data ins;
-assign ins = (rst || branch_true || halt_now) ? '0 : fbuf_out.instruction;
-// Create Bubble (NOOP) when branch taken or stalled
+word dout1, dout2;
 
-logic is_immediate;
-
-// sr1 and sr2 are the input registers for the DPRF
-// and dout1 and dout2 are the output ports for them
-// these douts will then be forwarded as the inputs to the ALU
-// dr is just the desination register,
-// which'll be forwarded to the memory stage
-logic [3:0] dr, sr1, sr2; 
-logic [31:0] dout1, dout2;
-
-always_comb begin
-    // This is for remaping which registers are:
-    // 1. Desination Register (the one we write to)
-    // 2. Source Registers (the ones whose data we need)
-    //
-    // Since we can read 2 things at once,
-    // but can only write to 1 thing at a time...
-    case (ins.opcode)
-        // Ok, this is hardcoded,
-        // but I just don't care...
-        // lol I probably shouldn't say that
-        
-        // R-Type Instructions
-        OP_ADD, OP_NAND, OP_MIN, OP_MAX: begin
-            dr = ins.rx;
-            sr1 = ins.ry;
-            sr2 = ins.imm.rz;
-        end 
-
-        // if we didn't execute the previous block, then: //
-        // IMMEDIATE INSTRUCTIONS //
-        
-        // I-Type with RX as DR.
-        OP_ADDI, OP_LW: begin
-            dr = ins.rx;
-            sr1 = ins.ry;
-            sr2 = '0; // unused
-        end
-
-        OP_JALR: begin
-            dr = ins.ry;
-            sr1 = ins.rx;
-            sr2 = '0; // unused
-        end
-
-        // I-Type with 2 Sources (no DR)
-        OP_SW, OP_BEQ, OP_BGT: begin
-            // BEQ and BGT will compare the result,
-            // And SW needs to read RX,
-            // but will only use RY + OFFSET on the ALU
-            dr = '0; // unused
-            sr1 = ins.rx; 
-            sr2 = ins.ry;
-        end
-
-        OP_LEA: begin
-            dr = ins.rx;
-            sr1 = '0;
-            sr2 = '0;
-        end
-
-        OP_HALT: begin
-            dr = '0;
-            sr1 = '0;
-            sr2 = '0;
-        end
-
-        // If we didn't explicitly set an instruction, FAIL
-        // So that we know we forgot to implement something...
-        default: begin
-            dr = 'X;
-            sr1 = 'X;
-            sr2 = 'X;
-        end
-    endcase
-end
+decode dec(
+    .fbuf(fbuf_out),
+    .dbuf(dbuf_in),
+    .*
+);
 
 // Physically instantiate and read/write registers
-dprf registers (
+dprf registers(
     .clk(clk),
     .rst(rst),
     .we('1),
-    .regno_read1(sr1),
-    .regno_read2(sr2),
+    .regno_read1(dbuf_in.sr1),
+    .regno_read2(dbuf_in.sr2),
     .regno_write(write_reg_dest),
     .write_data(write_reg_data),
     .read_data1(dout1),
@@ -231,28 +158,8 @@ dprf registers (
 
 
 assign stall_now = (dbuf_out.dr != 4'd0) && (dbuf_out.opcode == OP_LW)
-                    && ((dbuf_out.dr == sr1) || (dbuf_out.dr == sr2));
+                    && ((dbuf_out.dr == dbuf_in.sr1) || (dbuf_out.dr == dbuf_in.sr2));
 
-
-logic [19:0] imm_wire;
-
-always_comb begin
-    // Pass everything important along and let the EXECUTE Stage figure out
-    // what it wants to do with our stuff
-    dbuf_in.pc_plus_1 = fbuf_out.pc_plus_1;
-    dbuf_in.opcode = ins.opcode;
-    dbuf_in.dr = dr;
-
-    dbuf_in.val1 = dout1;
-    dbuf_in.sr1 = sr1;
-
-    dbuf_in.val2 = dout2;
-    dbuf_in.sr2 = sr2;
-
-    imm_wire = ins.imm;
-
-    dbuf_in.offset = { {12{imm_wire[19]}}, imm_wire };
-end
 
 always_ff @(posedge clk) begin
     // Need to check halt_now and dbuf_out.opcode because
@@ -261,30 +168,22 @@ always_ff @(posedge clk) begin
     dbuf_out <= (rst || halt_now || stall_now || (dbuf_out.opcode == OP_HALT)) ? '0 : dbuf_in;
 end
 
-// FOR DEBUGGGING //
-logic [31:0]    debug_dbuf_pc;     assign debug_dbuf_pc     = dbuf_out.pc_plus_1;
-opcode_t debug_dbuf_op;     assign debug_dbuf_op     = dbuf_out.opcode;
-logic [3:0]     debug_dbuf_dr;     assign debug_dbuf_dr     = dbuf_out.dr;
-logic [31:0]    debug_dbuf_val1;   assign debug_dbuf_val1   = dbuf_out.val1;
-logic [31:0]    debug_dbuf_val2;   assign debug_dbuf_val2   = dbuf_out.val2;
-logic [31:0]    debug_dbuf_offset; assign debug_dbuf_offset = dbuf_out.offset;
-
 // ************* //
 // EXECUTE STAGE //
 // ************* //
 
 
 alu_operation aluop;
-logic [31:0] alu_val1;
-logic [31:0] alu_val2;
-logic [31:0] alu_result;
+word alu_val1;
+word alu_val2;
+word alu_result;
 
 // We need to calculate the forwarded values
 // And we might overwrite the alu_val's
 // But then use the forwarded values later / elsewhere (like in SW)
 // So, we need to keep these separate.
-logic [31:0] fwd_val1;
-logic [31:0] fwd_val2;
+word fwd_val1;
+word fwd_val2;
 
 always_comb begin
     fwd_val1 = dbuf_out.val1;
@@ -434,8 +333,8 @@ end
 // ********* //
 
 logic we_dmem;
-logic [31:0] data_read_line;
-logic [31:0] data_write_dmem;
+word data_read_line;
+word data_write_dmem;
 
 assign data_read_line = DMEM[ebuf_out.address[15:0]];
 
