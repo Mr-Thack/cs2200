@@ -2,6 +2,7 @@ module test;
     logic clk;
     logic rst;
 
+    // pipeline #( .MEM_SIZE(256) ) dut (
     pipeline dut (
         .clk(clk),
         .rst(rst)

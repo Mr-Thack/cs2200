@@ -1,12 +1,10 @@
-import types::*;
-
-module pipeline(
+module pipeline (
     input logic clk,
     input logic rst,
 
-    output word debug_pc,
+    output logic [31:0] debug_pc,
     output logic halt_flag,
-    output word out_stat_cycles
+    output logic [31:0] out_stat_cycles
 );
 
 // Everything is defined left to right
@@ -15,18 +13,19 @@ module pipeline(
 // GLOBAL LOGIC //
 // ************ //
 
-word PC;
+logic [31:0] PC;
 
 // Stop forever for halting
 logic halt_now;
 // Stop for a load-use hazard
 logic stall_now;
+logic sig_halt;
 
 logic branch_true;
-word branch_target_line;
+logic [31:0] branch_target_line;
 
 logic [3:0] write_reg_dest;
-word write_reg_data;
+logic [31:0] write_reg_data;
 
 
 fbuf_data fbuf_in, fbuf_out;
@@ -37,8 +36,8 @@ mbuf_data mbuf_in, mbuf_out;
 always_ff @(posedge clk) begin
     if (rst) begin
         halt_now <= 1'b0;
-    end else if (dbuf_out.opcode == OP_HALT) begin
-        // As soon as we get HALT in the exec stage,
+    end else if (sig_halt) begin
+        // As soon as we get HALT in the decode stage,
         // latch onto the STALL forever and forever.
         halt_now <= 1'b1;
     end
@@ -54,12 +53,12 @@ end
 // ********** //
 // PERF STATS //
 // ********** //
-word stat_cycles;
-word stat_stalls;
-word stat_flushes;
-word stat_branches_seen;
-word stat_branches_correct;
-word stat_branches_incorrect;
+logic [31:0] stat_cycles;
+logic [31:0] stat_stalls;
+logic [31:0] stat_flushes;
+logic [31:0] stat_branches_seen;
+logic [31:0] stat_branches_correct;
+logic [31:0] stat_branches_incorrect;
 
 always_ff @(posedge clk) begin
     if (rst) begin
@@ -77,12 +76,12 @@ always_ff @(posedge clk) begin
         // If branch_true, then our policy of predicting not taken was wrong
         if (branch_true) stat_flushes <= stat_flushes + 1;
 
-        if (dbuf_out.opcode == OP_BEQ || dbuf_out.opcode == OP_BGT) begin
+        if (dbuf_out.logop == LOGIC_JMP_OFFSET) begin
             stat_branches_seen <= stat_branches_seen + 1;
             // If not branch_true, then we were correct in prredicting not taken
             if (!branch_true) stat_branches_correct <= stat_branches_correct + 1;
 
-            stat_branches_incorrect = stat_branches_seen - stat_branches_correct;
+            stat_branches_incorrect <= stat_branches_seen - stat_branches_correct;
         end
     end
 end
@@ -95,10 +94,11 @@ assign out_stat_cycles = stat_cycles;
 // ********************* //
 // INLINED MEMORY ARRAYS //
 // ********************* //
-localparam MEM_SIZE = 2**16;
 
-(* nomem2reg *) word IMEM [MEM_SIZE];
-(* nomem2reg *) word DMEM [MEM_SIZE];
+localparam MEM_SIZE = 65536;
+
+(* nomem2reg *) logic [31:0] IMEM [MEM_SIZE];
+(* nomem2reg *) logic [31:0] DMEM [MEM_SIZE];
 
 // Load from Init ROM
 initial begin
@@ -111,11 +111,10 @@ end
 // *********** //
 
 // This wire is the output from imem
-word instruction_read_line;
+logic [31:0] instruction_read_line;
 
 
 assign instruction_read_line = IMEM[PC[15:0]];
-
 
 always_comb begin
     fbuf_in.pc_plus_1 = PC + 1;
@@ -135,7 +134,7 @@ end
 // DECODE STAGE //
 // ************ //
 
-word dout1, dout2;
+logic [31:0] dout1, dout2;
 
 decode dec(
     .fbuf(fbuf_out),
@@ -157,7 +156,7 @@ dprf registers(
 );
 
 
-assign stall_now = (dbuf_out.dr != 4'd0) && (dbuf_out.opcode == OP_LW)
+assign stall_now = (dbuf_out.dr != 4'd0) && (dbuf_out.memop == MEM_READ)
                     && ((dbuf_out.dr == dbuf_in.sr1) || (dbuf_out.dr == dbuf_in.sr2));
 
 
@@ -165,7 +164,7 @@ always_ff @(posedge clk) begin
     // Need to check halt_now and dbuf_out.opcode because
     // halt_now is only latched on the clock cycle, so it wouldn't propogate
     // fast enough to prevent the decode stage from forwarding this
-    dbuf_out <= (rst || halt_now || stall_now || (dbuf_out.opcode == OP_HALT)) ? '0 : dbuf_in;
+    dbuf_out <= (rst || halt_now || stall_now || sig_halt) ? '0 : dbuf_in;
 end
 
 // ************* //
@@ -173,22 +172,17 @@ end
 // ************* //
 
 
-alu_operation aluop;
-word alu_val1;
-word alu_val2;
-word alu_result;
-
 // We need to calculate the forwarded values
 // And we might overwrite the alu_val's
 // But then use the forwarded values later / elsewhere (like in SW)
 // So, we need to keep these separate.
-word fwd_val1;
-word fwd_val2;
+logic [31:0] fwd_val1;
+logic [31:0] fwd_val2;
 
 always_comb begin
     fwd_val1 = dbuf_out.val1;
     fwd_val2 = dbuf_out.val2;
-    
+
     // So... we need to do Data Forwarding
     // But ummm.... as of the time I'm writing, I'm too tired to modularize
     // So, remember to copy and paste and edit properly!!!
@@ -219,110 +213,13 @@ always_comb begin
     if ((ebuf_out.dr != 4'd0) && (ebuf_out.dr == dbuf_out.sr2)) begin
         fwd_val2 = ebuf_out.data;
     end
-
-    alu_val1 = fwd_val1;
-    alu_val2 = fwd_val2;
-
-
-    case (dbuf_out.opcode)
-        OP_ADD, OP_JALR: begin
-            aluop = ALU_ADD;
-        end
-
-        OP_ADDI, OP_LW: begin
-            aluop = ALU_ADD;
-            alu_val2 = dbuf_out.offset;
-        end
-
-        OP_SW: begin
-            aluop = ALU_ADD;
-            alu_val1 = dbuf_out.offset;
-        end
-
-        OP_NAND: begin
-            aluop = ALU_NAND;
-        end
-
-        OP_BEQ, OP_BGT, OP_MIN, OP_MAX: begin
-            aluop = ALU_SUB; 
-        end
-
-        OP_HALT: begin
-            aluop = ALU_IGNORE;
-        end
-
-        OP_LEA: begin
-            aluop= ALU_ADD;
-            alu_val1 = dbuf_out.pc_plus_1;
-            alu_val2 = dbuf_out.offset;
-        end
-
-        default: begin
-            aluop = ALU_IGNORE;
-        end
-    endcase
 end
 
-alu alu0 (
-    .a(alu_val1),
-    .b(alu_val2),
-    .op(aluop),
-    .out(alu_result)
+execute exec(
+    .dbuf(dbuf_out),
+    .ebuf(ebuf_in),
+    .*
 );
-
-always_comb begin
-    branch_true = 1'b0;
-    branch_target_line = dbuf_out.pc_plus_1 + dbuf_out.offset;
-    
-    ebuf_in.opcode = dbuf_out.opcode;
-
-    ebuf_in.dr = '0;
-    ebuf_in.address = '0;
-    ebuf_in.data = '0;
-    
-    case (dbuf_out.opcode)
-        OP_ADD, OP_NAND, OP_ADDI, OP_LEA: begin
-            ebuf_in.dr = dbuf_out.dr;
-            ebuf_in.data = alu_result;
-        end
-
-        OP_LW: begin
-            ebuf_in.dr = dbuf_out.dr;
-            ebuf_in.address = alu_result;
-        end
-
-        OP_SW: begin
-            ebuf_in.address = alu_result;
-            ebuf_in.data = fwd_val1;
-        end
-
-        OP_BEQ: begin
-            branch_true = (alu_result == 0);
-        end
-
-        OP_JALR: begin
-            ebuf_in.dr = dbuf_out.dr;
-            ebuf_in.data = dbuf_out.pc_plus_1;
-            branch_target_line = alu_result;
-            branch_true = 1'b1;
-        end
-
-        OP_BGT: begin
-            branch_true = ($signed(alu_result) > 0);
-        end
-
-        OP_MIN: begin
-            ebuf_in.dr = dbuf_out.dr;
-            ebuf_in.data = ($signed(alu_result) < 0) ? fwd_val1 : fwd_val2;
-        end
-        
-        OP_MAX: begin
-            ebuf_in.dr = dbuf_out.dr;
-            ebuf_in.data = ($signed(alu_result) > 0) ? fwd_val1 : fwd_val2;
-        end
-
-    endcase
-end
 
 always_ff @(posedge clk) begin
     ebuf_out <= rst ? '0 : ebuf_in;
@@ -332,47 +229,26 @@ end
 // MEM STAGE //
 // ********* //
 
-logic we_dmem;
-word data_read_line;
-word data_write_dmem;
+logic [15:0] dmem_addr_line;
+logic [31:0] dmem_data_line;
 
-assign data_read_line = DMEM[ebuf_out.address[15:0]];
+assign dmem_addr_line = ebuf_out.address[15:0];
+assign dmem_data_line = DMEM[dmem_addr_line];
 
-always_comb begin
-    we_dmem = (ebuf_out.opcode == OP_SW);
-    data_write_dmem = ebuf_out.data;
-end
 
 always_ff @(posedge clk) begin
-    if (we_dmem) begin
-        DMEM[ebuf_out.address[15:0]] <= data_write_dmem;
+    if (ebuf_out.memop == MEM_WRITE) begin
+        DMEM[dmem_addr_line] <= ebuf_out.data;
     end
 end
 
 always_comb begin
     mbuf_in.dr = ebuf_out.dr;
-    mbuf_in.data = '0;
-
-    case (ebuf_out.opcode)
-        OP_ADD, OP_NAND, OP_ADDI, OP_JALR,
-        OP_LEA, OP_MIN, OP_MAX: begin
-            mbuf_in.data = ebuf_out.data;
-        end
-
-        OP_LW: begin
-            mbuf_in.data = data_read_line;
-        end
-
-        default: begin
-            // SW, BEQ, HALT, BGT 
-            mbuf_in.dr = '0;
-            // Just in case...
-        end
-    endcase
+    mbuf_in.data = (ebuf_out.memop == MEM_READ) ? dmem_data_line : ebuf_out.data;
 end
 
 always_ff @(posedge clk) begin
-    mbuf_out <= rst? '0 : mbuf_in;
+    mbuf_out <= rst ? '0 : mbuf_in;
 end
 
 // **************** //

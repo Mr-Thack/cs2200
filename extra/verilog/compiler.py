@@ -385,9 +385,7 @@ class CircuitBuilder:
         dy = 0
 
         # Y Offset: connection port shifts down as lines wrap
-        if bitsize <= 8:
-            dy = 0
-        elif bitsize <= 16:
+        if bitsize <= 16:
             dy = 0
         elif bitsize <= 24:
             dy = 1
@@ -401,18 +399,14 @@ class CircuitBuilder:
             dx = -6
         else:
             dx = 8 
+            # This part calculates offset due to line size
+            # whereas the previous one calculated offset due to height
+            if bitsize < 8:
+                offset = bitsize - 8
+                
+                if bitsize == 1:
+                    offset += 1 
 
-        # This part calculates offset due to line size
-        # whereas the previous one calculated offset due to height
-        if bitsize < 8:
-            offset = bitsize - 8
-            
-            if bitsize == 1:
-                offset += 1 
-
-            if is_output:
-                dx = offset
-            else:
                 dx += offset
 
         return dx, dy
@@ -451,13 +445,7 @@ class CircuitBuilder:
 
         dx, dy = self._get_io_offsets(wire.bitsize, is_output=not is_input)
 
-        if is_input:
-            self.add_tunnel(x + dx, y + dy, "WEST", wire)
-        else:
-            if wire.bitsize == 1:
-                print(f"Added 1 Pin Output @{x},{y}")
-                print(f"Offseted by {dx},{dy}")
-            self.add_tunnel(x + dx, y + dy, "EAST", wire)
+        self.add_tunnel(x + dx, y + dy, "WEST" if is_input else "EAST", wire)
 
     # ==========================================
     # CRYPTOGRAPHY & SAVING
@@ -471,8 +459,8 @@ class CircuitBuilder:
         json_str = json.dumps(circuits_dict, indent=2).replace("'", "\\u0027")
 
         file_data = "null" + json_str.replace('\r\n', '\n')
-        print("File Data:")
-        print(file_data)
+        # print("File Data:")
+        # print(file_data)
 
         file_data_hash = self._sha256ify(file_data)
         print("File Data Hash:", file_data_hash)
@@ -645,7 +633,25 @@ def resolve_bus(compiler: CircuitBuilder, grid, raw_bits: List[int], current_mod
     if all(isinstance(b, str) for b in raw_bits):
         return get_wire(raw_bits, current_module)
 
-    # 2. Segment the requested bus into strictly contiguous chunks
+    # 2. Sign Extension Trapping (Solves Repeating Splitters)
+    repeats = 0
+    for i in range(len(raw_bits) - 1, 0, -1):
+        if raw_bits[i] == raw_bits[i - 1]:
+            repeats += 1
+        else:
+            break
+
+    if repeats > 0:
+        # Chop off the repeats to get the core bits (e.g., the lower 20 bits of the offset)
+        base_bits = raw_bits[:len(raw_bits)-repeats]
+
+        # Recursively resolve the core bits (it might just be a standard wire)
+        base_wire = resolve_bus(compiler, grid, base_bits, current_module, bit_registry)
+
+        # Physically drop a Bit Extender to stretch it up to the full 32-bits
+        return get_padded_wire(compiler, grid, base_wire, len(raw_bits), is_signed=True)
+
+    # 3. Segment the requested bus into strictly contiguous chunks
     chunks = []
     current_chunk = []
     current_parent = None
@@ -813,6 +819,8 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
         # print(reverse_netnames)
 
         compiler.set_active_circuit(safe_mod_name)
+        
+        grid = GridAllocator(X_INIT, Y_INIT, X_SPACING, Y_SPACING, X_MAX)
 
         # Helper for Outputs (Directly defines parent buses)
         def gw(bits): return get_wire(bits, safe_mod_name)
@@ -826,15 +834,17 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
 
         ports = module_data.get("ports", {})
         for port_name, port_data in ports.items():
+            bits = port_data.get("bits", [])
             is_input = (port_data.get("direction") == "input")
-            wire = gw(port_data.get("bits", []))
+            
+            wire = gw(bits) if is_input else res(bits)
+
             compiler.add_pin(x=current_x, y=current_y, wire=wire, pin_label=port_name, is_input=is_input)
             current_y += Y_SPACING
 
         current_x = X_INIT 
         current_y = Y_INIT
 
-        grid = GridAllocator(X_INIT, Y_INIT, X_SPACING, Y_SPACING, X_MAX)
         
         cells = module_data.get("cells", {})
 
@@ -1073,7 +1083,15 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
 
                 str_wire = res([wr_en_array[0]] if wr_en_array else [])
                 ld_wire = res([rd_en_array[0]] if rd_en_array else ['1']) # Default LD to 1 if missing
-                
+
+                match clean_label:
+                    case "IMEM":
+                        final_label = "I-MEM"
+                    case "DMEM":
+                        final_label = "D-MEM"
+                    case _:
+                        final_label = clean_label
+
                 # print("Writing Memory with label:", clean_label)
 
                 # Standard Single-Port RAM (Your standard Instruction/Data memory)
@@ -1089,8 +1107,7 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
                     in_ld=ld_wire,
                     in_str=str_wire,
                     in_clr=res(['0']),  # Always Tie Reset to Low
-                    label=clean_label
-
+                    label=final_label
                 )
             # --- REGISTERS (D-FLIP-FLOPS) ---
             elif c_type == "$dff":
@@ -1098,7 +1115,12 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
 
                 final_label = reverse_netnames.get(q_bits, clean_label)
 
-                # print("$dff with:", final_label)
+                if (final_label in ["zero", "at", "v0", "a0", "a1", "a2", "t0", "t1", "t2", "s0", "s1", "s2", "k0", "sp", "fp", "ra"]):
+                    final_label = "$" + final_label
+
+                final_label = "PC-IF" if final_label == "PC" else final_label
+
+                print("$dff with:", final_label)
                 compiler.add_register(
                      x=x, y=y,
                      in_d=res(conns.get("D", [])),

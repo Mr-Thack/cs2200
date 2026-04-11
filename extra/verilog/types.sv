@@ -1,17 +1,42 @@
 package types;
 
-    typedef logic [31:0] word;
-
     // 3 bit Operation Code
     typedef enum logic [2:0] {
+        ALU_IGNORE,
         ALU_ADD,
         ALU_SUB,
         ALU_NAND,
-        ALU_ADD1,
         ALU_PASSA,
         ALU_PASSB,
-        ALU_IGNORE
+        ALU_ADD1
     } alu_operation;
+
+    typedef enum logic [1:0] {
+        ALU_VAL1,
+        ALU_VAL2,
+        ALU_OFFSET,
+        ALU_PC
+    } alu_source;
+    
+
+    typedef enum logic [1:0] {
+        MEM_IGNORE,
+        MEM_READ,
+        MEM_WRITE
+    } mem_operation;
+
+    typedef enum logic [2:0] {
+        CMP_IGNORE,
+        CMP_LT,
+        CMP_EQ,
+        CMP_GT
+    } cmp_operation;
+
+    typedef enum logic [2:0] {
+        LOGIC_IGNORE,
+        LOGIC_JMP_OFFSET,
+        LOGIC_JMP_RES
+    } logic_operation;
 
 
 
@@ -25,9 +50,7 @@ package types;
         OP_JALR = 4'b0110,
         OP_HALT = 4'b0111,
         OP_BGT  = 4'b1000,
-        OP_LEA  = 4'b1001,
-        OP_MIN  = 4'b1010,
-        OP_MAX  = 4'b1011
+        OP_LEA  = 4'b1001
     } opcode_t;
 
 
@@ -44,19 +67,24 @@ package types;
     } instruction_data;
 
     typedef struct packed {
-        word pc_plus_1;
+        logic [31:0] pc_plus_1;
         instruction_data instruction;
     } fbuf_data;
 
     typedef struct packed {
-        word pc_plus_1;
-        opcode_t opcode;
-        word val1;
-        word val2;
-        word offset;
+        logic [31:0] pc_plus_1;
+        logic [31:0] val1;
+        logic [31:0] val2;
+        logic [31:0] offset;
         logic [3:0] dr;
         logic [3:0] sr1;
         logic [3:0] sr2;
+        alu_source src1;
+        alu_source src2;
+        alu_operation aluop;
+        cmp_operation cmpop;
+        logic_operation logop;
+        mem_operation memop;
     } dbuf_data;
 
 
@@ -65,14 +93,14 @@ package types;
     // to add a mux onto the data line instead of the address line
     // Both would work, and I don't think there's a major improvement either way
     typedef struct packed {
-        opcode_t opcode;
-        word address;
-        word data;
+        logic [31:0] address;
+        logic [31:0] data;
         logic [3:0] dr;
+        mem_operation memop; 
     } ebuf_data;
 
     typedef struct packed {
-        word data;
+        logic [31:0] data;
         logic [3:0] dr;
     } mbuf_data;
 
