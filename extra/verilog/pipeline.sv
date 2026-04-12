@@ -21,8 +21,11 @@ logic halt_now;
 logic stall_now;
 logic sig_halt;
 
-logic branch_true;
-logic [31:0] branch_target_line;
+logic branch_taken;
+logic [31:0] branch_target;
+
+logic predict_taken;
+logic [31:0] predict_target;
 
 logic [3:0] write_reg_dest;
 logic [31:0] write_reg_data;
@@ -32,6 +35,7 @@ fbuf_data fbuf_in, fbuf_out;
 dbuf_data dbuf_in, dbuf_out;
 ebuf_data ebuf_in, ebuf_out;
 mbuf_data mbuf_in, mbuf_out;
+
 
 always_ff @(posedge clk) begin
     if (rst) begin
@@ -45,44 +49,114 @@ always_ff @(posedge clk) begin
     if (rst) begin
         PC <= 32'd0;
     end else if (!halt_now && !stall_now) begin
-        // We ONLY want to change PC if we're not Stalled
-        PC <= branch_true? branch_target_line : (PC + 1);
+        // Going by priority:
+        
+        // 1. If we need to flush (because branch mispredict)
+        if (branch_taken) begin
+            PC <= branch_target;
+
+        // 2. Branch Prediction
+        end else if (predict_taken) begin
+            PC <= predict_target;
+
+        // 3. Step Forward Normally
+        end else begin
+            PC <= PC + 1;
+        end
+
     end
 end
 
 // ********** //
 // PERF STATS //
 // ********** //
+
+// 1. Core Pipeline Metrics
 logic [31:0] stat_cycles;
 logic [31:0] stat_stalls;
 logic [31:0] stat_flushes;
+logic [31:0] stat_inst_retired;
+
+// 2. BTB Cache Performance
+logic [31:0] stat_btb_hits;
+logic [31:0] stat_btb_misses;
+
+// 3. Offset Branch Predictor Accuracy (BEQ / BGT)
 logic [31:0] stat_branches_seen;
 logic [31:0] stat_branches_correct;
 logic [31:0] stat_branches_incorrect;
+
+// 4. Indirect Jump Accuracy (JALR)
+logic [31:0] stat_jalr_seen;
+logic [31:0] stat_jalr_correct;
+logic [31:0] stat_jalr_incorrect;
+
 
 always_ff @(posedge clk) begin
     if (rst) begin
         stat_cycles <= '0;
         stat_stalls <= '0;
         stat_flushes <= '0;
+        stat_inst_retired <= '0;
+
+        stat_btb_hits <= '0;
+        stat_btb_misses <= '0;
+
         stat_branches_seen <= '0;
         stat_branches_correct <= '0;
         stat_branches_incorrect <= '0;
+
+        stat_jalr_seen <= '0;
+        stat_jalr_correct <= '0;
+        stat_jalr_incorrect <= '0;
     end else begin
+
+        // -----------------------------------------
+        // GLOBAL PIPELINE HEALTH
+        // -----------------------------------------
         if (!halt_now) stat_cycles <= stat_cycles + 1;
-
         if (stall_now) stat_stalls <= stat_stalls + 1;
+        if (branch_taken) stat_flushes <= stat_flushes + 1;
+        if (mbuf_out.valid) begin
+            // Count instructions that successfully make it out of the pipeline
+            stat_inst_retired <= stat_inst_retired + 1;
+        end
 
-        // If branch_true, then our policy of predicting not taken was wrong
-        if (branch_true) stat_flushes <= stat_flushes + 1;
-
+        // -----------------------------------------
+        // CONDITIONAL BRANCHES (BEQ, BGT)
+        // -----------------------------------------
         if (dbuf_out.logop == LOGIC_JMP_OFFSET) begin
             stat_branches_seen <= stat_branches_seen + 1;
-            // If not branch_true, then we were correct in prredicting not taken
-            if (!branch_true) stat_branches_correct <= stat_branches_correct + 1;
 
-            stat_branches_incorrect <= stat_branches_seen - stat_branches_correct;
+            // Track BTB hit rate
+            if (dbuf_out.btb_hit) begin
+                stat_btb_hits <= stat_btb_hits + 1;
+            end else begin
+                stat_btb_misses <= stat_btb_misses + 1;
+            end
+
+            // Track Prediction Accuracy
+            if (branch_taken) begin
+                stat_branches_incorrect <= stat_branches_incorrect + 1;
+            end else begin
+                stat_branches_correct <= stat_branches_correct + 1;
+            end
         end
+
+        // -----------------------------------------
+        // INDIRECT JUMPS (JALR)
+        // -----------------------------------------
+        if (dbuf_out.logop == LOGIC_JMP_RES) begin
+            stat_jalr_seen <= stat_jalr_seen + 1;
+
+            // Once RAS is implemented, this will track how well it works
+            if (branch_taken) begin
+                stat_jalr_incorrect <= stat_jalr_incorrect + 1;
+            end else begin
+                stat_jalr_correct <= stat_jalr_correct + 1;
+            end
+        end
+
     end
 end
 
@@ -106,26 +180,45 @@ initial begin
     $readmemh("../pow.hex", DMEM);
 end
 
+btb_read_data btb_rdata;
+btb_write_data btb_wdata;
+
+// BTB Indexing on PC, NOT ON PC + 1
+btb btb0 (
+    .clk(clk),
+    .rst(rst),
+    
+    .read_pc(PC),
+    .rdata(btb_rdata),
+
+    .wdata(btb_wdata)
+);
+
 // *********** //
 // FETCH STAGE //
 // *********** //
 
 // This wire is the output from imem
-logic [31:0] instruction_read_line;
+instruction_data IR;
 
+assign IR = IMEM[PC[15:0]];
 
-assign instruction_read_line = IMEM[PC[15:0]];
-
-always_comb begin
-    fbuf_in.pc_plus_1 = PC + 1;
-    fbuf_in.instruction = instruction_read_line;
-end
+fetch ftch(
+    .clk(clk),
+    .rst(rst),
+    .PC(PC),
+    .IR(IR),
+    .predict_taken(predict_taken),
+    .predict_target(predict_target),
+    .rdata(btb_rdata),
+    .fbuf(fbuf_in)
+);
 
 always_ff @(posedge clk) begin
     // If Stalled,
     // then we can't forward our newly fetched instruction to the Decode Stage
     if (!halt_now && !stall_now) begin
-        fbuf_out <= (rst || branch_true) ? '0 : fbuf_in;
+        fbuf_out <= (rst || branch_taken) ? '0 : fbuf_in;
     end
 end
 
@@ -137,9 +230,15 @@ end
 logic [31:0] dout1, dout2;
 
 decode dec(
+    .clk(clk),
+    .rst(rst),
+    .branch_taken(branch_taken),
+    .halt_now(halt_now),
     .fbuf(fbuf_out),
-    .dbuf(dbuf_in),
-    .*
+    .dout1(dout1),
+    .dout2(dout2),
+    .sig_halt(sig_halt),
+    .dbuf(dbuf_in)
 );
 
 // Physically instantiate and read/write registers
@@ -164,7 +263,7 @@ always_ff @(posedge clk) begin
     // Need to check halt_now and dbuf_out.opcode because
     // halt_now is only latched on the clock cycle, so it wouldn't propogate
     // fast enough to prevent the decode stage from forwarding this
-    dbuf_out <= (rst || halt_now || stall_now || sig_halt) ? '0 : dbuf_in;
+    dbuf_out <= (rst || halt_now || stall_now || sig_halt || branch_taken) ? '0 : dbuf_in;
 end
 
 // ************* //
@@ -217,8 +316,12 @@ end
 
 execute exec(
     .dbuf(dbuf_out),
-    .ebuf(ebuf_in),
-    .*
+    .fwd_val1(fwd_val1),
+    .fwd_val2(fwd_val2),
+    .branch_taken(branch_taken),
+    .branch_target(branch_target),
+    .wdata(btb_wdata),
+    .ebuf(ebuf_in)
 );
 
 always_ff @(posedge clk) begin
@@ -245,6 +348,7 @@ end
 always_comb begin
     mbuf_in.dr = ebuf_out.dr;
     mbuf_in.data = (ebuf_out.memop == MEM_READ) ? dmem_data_line : ebuf_out.data;
+    mbuf_in.valid = ebuf_out.valid;
 end
 
 always_ff @(posedge clk) begin
@@ -256,8 +360,8 @@ end
 // **************** //
 
 always_comb begin
-   write_reg_dest = mbuf_out.dr;
-   write_reg_data = mbuf_out.data;
+    write_reg_dest = mbuf_out.dr;
+    write_reg_data = mbuf_out.data;
 end
 
 endmodule

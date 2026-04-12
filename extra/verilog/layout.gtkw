@@ -1,36 +1,52 @@
 [*]
 [*] GTKWave Analyzer v3.3.126 (w)1999-2026 BSI
-[*] Sun Apr  5 16:32:17 2026
+[*] Sun Apr 12 15:25:37 2026
 [*]
-[dumpfile] "/home/bhaia/Documents/second/cs2200/extra/verilog/waves.vcd"
-[dumpfile_mtime] "Sun Apr  5 16:28:45 2026"
-[dumpfile_size] 1314469
+[dumpfile] "/home/bhaia/Documents/second/cs2200/extra/verilog/build/waves.vcd"
+[dumpfile_mtime] "Sun Apr 12 15:16:33 2026"
+[dumpfile_size] 1835887
 [savefile] "/home/bhaia/Documents/second/cs2200/extra/verilog/layout.gtkw"
-[timestart] 17989
+[timestart] 13179
 [size] 1280 720
-[pos] -1 -1
-*-9.473659 19618 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[pos] -27 -24
+*-6.000000 13312 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] test.
 [treeopen] test.dut.
 [sst_width] 290
-[signals_width] 391
+[signals_width] 336
 [sst_expanded] 1
 [sst_vpaned_height] 198
 @28
-test.dut.clk
-test.dut.rst
-@24
-test.dut.stat_branches_correct[31:0]
-test.dut.stat_branches_incorrect[31:0]
-test.dut.stat_branches_seen[31:0]
-test.dut.stat_cycles[31:0]
-test.dut.stat_flushes[31:0]
-test.dut.stat_stalls[31:0]
-@28
+test.clk
+test.rst
 test.dut.stall_now
+@29
+[color] 3
 test.dut.halt_now
-@22
+@24
+[color] 5
 test.dut.PC[31:0]
+test.dut.stat_branches_correct[31:0]
+[color] 1
+test.dut.stat_branches_incorrect[31:0]
+[color] 5
+test.dut.stat_branches_seen[31:0]
+test.dut.stat_btb_hits[31:0]
+[color] 1
+test.dut.stat_btb_misses[31:0]
+[color] 7
+test.dut.stat_cycles[31:0]
+[color] 3
+test.dut.stat_flushes[31:0]
+test.dut.stat_inst_retired[31:0]
+test.dut.stat_jalr_correct[31:0]
+[color] 1
+test.dut.stat_jalr_incorrect[31:0]
+[color] 5
+test.dut.stat_jalr_seen[31:0]
+[color] 3
+test.dut.stat_stalls[31:0]
+@22
 test.dut.registers.at[31:0]
 test.dut.registers.v0[31:0]
 test.dut.registers.a0[31:0]

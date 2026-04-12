@@ -30,8 +30,8 @@ module test;
         rst = 1'b1;
         #30;
         rst = 1'b0;
-        // Run for 2000 clock cycles 
-        #20000;
+        // Run for 1500 clock cycles 
+        #15000;
 
         $display("Finished Test");
         $finish;

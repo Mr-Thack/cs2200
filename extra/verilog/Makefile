@@ -1,7 +1,7 @@
 # --- Variables ---
 TYPES = types.sv
 SRC = pipeline.sv
-COMPONENTS = dprf.sv decode.sv alu.sv cmp.sv log.sv execute.sv
+COMPONENTS = dprf.sv btb.sv fetch.sv decode.sv alu.sv cmp.sv log.sv execute.sv
 TB = test.sv
 
 SV_SRCS = $(TYPES) $(COMPONENTS) $(SRC)
@@ -35,7 +35,7 @@ runtest: test
 # --- Step 2: Yosys synthesis ---
 netlist: verilog
 	@echo "--- Synthesizing Netlist ---"
-	yosys -p "read_verilog $(V_SRCS); prep -top pipeline; write_json $(NETLIST)"
+	yosys -p "read_verilog -sv $(V_SRCS) Datapath.sv; prep -top Datapath; pmuxtree; opt; write_json $(NETLIST)"
 	@echo "--- Netlist Generated ---"
 
 # --- Step 3: CircuitSim generation ---

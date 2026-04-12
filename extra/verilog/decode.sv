@@ -4,7 +4,7 @@ module decode(
     input logic clk,
     input logic rst,
 
-    input logic branch_true,
+    input logic branch_taken,
     input logic halt_now,
 
     input fbuf_data fbuf,
@@ -19,7 +19,7 @@ module decode(
 
 
 instruction_data ins;
-assign ins = (rst || branch_true || halt_now) ? '0 : fbuf.instruction;
+assign ins = (rst || branch_taken || halt_now) ? '0 : fbuf.instruction;
 // Create Bubble (NOOP) when branch taken or stalled
 
 // sr1 and sr2 are the input registers for the DPRF
@@ -153,6 +153,11 @@ always_comb begin
     dbuf.cmpop = cmpop;
     dbuf.memop = memop;
     dbuf.logop = logop;
+
+    dbuf.predicted_taken = fbuf.predicted_taken;
+
+    dbuf.btb_hit = fbuf.btb_hit;
+    dbuf.valid = fbuf.valid; 
 end
 
 endmodule

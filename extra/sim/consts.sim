@@ -530,6 +530,16 @@
           }
         },
         {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.ClockPeer",
+          "x": 9,
+          "y": 55,
+          "properties": {
+            "Label location": "NORTH",
+            "Label": "",
+            "Direction": "EAST"
+          }
+        },
+        {
           "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
           "x": 12,
           "y": 31,
@@ -649,6 +659,17 @@
             "Width": "5",
             "Bitsize": "8"
           }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
+          "x": 11,
+          "y": 55,
+          "properties": {
+            "Label": "WCLOCK",
+            "Direction": "WEST",
+            "Width": "5",
+            "Bitsize": "1"
+          }
         }
       ],
       "wires": []
@@ -658,6 +679,8 @@
     "CThmMzAxN2ZkYzcyMGVmNDY1MDRiOGYwMDU2YWMxOGFiMmZiZWQ2MjRkZmIyYzQ5MDVkZjhlMzE2NjdkODI2MzUJMTc3NTM2MTExODExMgk4MTZlNDNjMDY5OGIyMjAyMDU0NjVkM2I2NTMzZTJlNjc2ZjE5NTIxOTM5ZDM1MGJjMzNjZmUxNjY0N2NiMzll",
     "OGYzMDE3ZmRjNzIwZWY0NjUwNGI4ZjAwNTZhYzE4YWIyZmJlZDYyNGRmYjJjNDkwNWRmOGUzMTY2N2Q4MjYzNQlkNzI2OTc0YjZiZGMyNTU3MTg5MDgwNTc0YmFhNTM2MzA0MTk4YWY4NjVhMWFkZmU4Y2RjMjI1MjVlYjJlZGY2CTE3NzU0NjY2MDcyNTQJYjU2NzFlNTdhNjYxMzkyNGYxMzYxNzhkY2M4NDEwYWExNDY2ODVjNzY4ZjA4NDA4ODI0MGYzNmM5OTJmMjRmZA\u003d\u003d",
     "ZDcyNjk3NGI2YmRjMjU1NzE4OTA4MDU3NGJhYTUzNjMwNDE5OGFmODY1YTFhZGZlOGNkYzIyNTI1ZWIyZWRmNgliMzI5OGUxZDY5NGU4ZTBlNDhjNmQ1NDg5ZjVhZDZhOGRmYWE4OTE0ZjU1NDJiNjQ2MjE1NDdmNTUwODdkOWUwCTE3NzU0NjY2MDgxMDUJYjU2NzFlNTdhNjYxMzkyNGYxMzYxNzhkY2M4NDEwYWExNDY2ODVjNzY4ZjA4NDA4ODI0MGYzNmM5OTJmMjRmZA\u003d\u003d",
-    "YjMyOThlMWQ2OTRlOGUwZTQ4YzZkNTQ4OWY1YWQ2YThkZmFhODkxNGY1NTQyYjY0NjIxNTQ3ZjU1MDg3ZDllMAljMmJlZTBkZDEzZTA0MmRiZGUyZWZlYjBmZjVhMmQ4OTUxYWJkYTdiMTUyNTVjZTQ4ZGJiOTIzMGNhZDYwMjk0CTE3NzU0NjcyMDQzMzMJNWY4NzI5ZWIzMjBhZDBlMDA5MjYxZGM1ZGI0MTExMjNmZThmYzk5NTc3MDE4MTk3NjZkYzA5NzQ1OTg3MDJmYQ\u003d\u003d"
+    "YjMyOThlMWQ2OTRlOGUwZTQ4YzZkNTQ4OWY1YWQ2YThkZmFhODkxNGY1NTQyYjY0NjIxNTQ3ZjU1MDg3ZDllMAljMmJlZTBkZDEzZTA0MmRiZGUyZWZlYjBmZjVhMmQ4OTUxYWJkYTdiMTUyNTVjZTQ4ZGJiOTIzMGNhZDYwMjk0CTE3NzU0NjcyMDQzMzMJNWY4NzI5ZWIzMjBhZDBlMDA5MjYxZGM1ZGI0MTExMjNmZThmYzk5NTc3MDE4MTk3NjZkYzA5NzQ1OTg3MDJmYQ\u003d\u003d",
+    "YzJiZWUwZGQxM2UwNDJkYmRlMmVmZWIwZmY1YTJkODk1MWFiZGE3YjE1MjU1Y2U0OGRiYjkyMzBjYWQ2MDI5NAliMTgwOGM4ZmM5ZmJiODk4OGFkNmZhZWVhNDc3NGE3NzMxNjUyMTI5NzBmZTE5YWMzNzk1NjI1MmUyZDE3MDc4CTE3NzYwMzU3MTAxNDYJNTU2MTk2Y2U0OWNmZDAxMmNhNGY3ZjBmZDIxMzEzNTA0MzYxN2UxMzM2Y2NjZjA2YmRmNzljYzNiNTQ0NzMxMg\u003d\u003d",
+    "YjE4MDhjOGZjOWZiYjg5ODhhZDZmYWVlYTQ3NzRhNzczMTY1MjEyOTcwZmUxOWFjMzc5NTYyNTJlMmQxNzA3OAkwZDk3ZDU4NzNjNzMyM2YyMTZkZTIzNmRkNmZkMDRmMmViN2ZjM2NmMTczZTBlZDFhZmMxYjJkMThlNWNkYjU4CTE3NzYwMzU3MTE0MjEJNTU2MTk2Y2U0OWNmZDAxMmNhNGY3ZjBmZDIxMzEzNTA0MzYxN2UxMzM2Y2NjZjA2YmRmNzljYzNiNTQ0NzMxMg\u003d\u003d"
   ]
 }

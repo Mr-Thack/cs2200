@@ -1,0 +1,15 @@
+First Attempt:
+Traditional 5-Stage Pipelined, Monolithic, Default Branch Not Taken Policy
+POW: 1809, FIB: 6214, TWO_SUM: 2752
+
+Second Attempt:
+Just the first attempt, but Decoupled Frontend vs Backend, plus minor architectural bugs fixed.
+The 1 cycle gain is just due to checking for halt in Decode instead of Exec.
+POW: 1808, FIB: 6213, TWO_SUM: 2751
+
+Third Attempt:
+Changed Default Branch Policy to Branch Taken Backwards, Not Taken Forwards.
+POW: 1344, FIB: 6213, TWO_SUM: 2395
+
+Fourth Attempt:
+Added 8-Set, 8-Way BTB with Default Branch Policy for Misses still BTFNT.

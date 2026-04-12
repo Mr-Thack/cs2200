@@ -56,18 +56,24 @@ def parse_structs(sv_text: str, enum_widths: dict) -> dict:
         body        = sm.group(1)
         struct_name = sm.group(2)
         fields      = []
+
         for line in body.strip().splitlines():
+            line = line.split('//')[0]
             line = line.strip().rstrip(';').strip()
-            if not line or line.startswith('//'):
+
+            if not line: 
                 continue
+
             m = re.match(r'logic\s+\[(\d+):(\d+)\]\s+(\w+)', line)
             if m:
                 fields.append((m.group(3), int(m.group(1)) - int(m.group(2)) + 1))
                 continue
+
             m = re.match(r'logic\s+(\w+)$', line)
             if m:
                 fields.append((m.group(1), 1))
                 continue
+
             m = re.match(r'(\w+)\s+(\w+)$', line)
             if m:
                 type_name, fname = m.group(1), m.group(2)
@@ -119,10 +125,11 @@ class SignalLayout:
                 continue
             local_hi = overlap_hi - clo
             local_lo = overlap_lo - clo
-            if local_hi == local_lo:
-                parts.append(f"{cname}[{local_hi}]")
-            elif local_hi == cw - 1 and local_lo == 0:
+
+            if local_hi == cw - 1 and local_lo == 0:
                 parts.append(cname)
+            elif local_hi == local_lo:
+                parts.append(f"{cname}[{local_hi}]")
             else:
                 parts.append(f"{cname}[{local_hi}:{local_lo}]")
         if not parts:

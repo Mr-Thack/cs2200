@@ -181,6 +181,18 @@ class CircuitBuilder:
         self.add_tunnel(x + 9, y + 1, "WEST",  out_data)
         self.add_tunnel(x + 1, y + 5, "NORTH", in_en)
 
+    def add_clock(self, x: int, y: int, out_wire: Wire):
+        """Spawns a CircuitSim ClockPeer."""
+        self._add_raw_component(
+            "com.ra4king.circuitsim.gui.peers.wiring.ClockPeer", x, y,
+            {
+                "Label location": "NORTH",
+                "Label": "CLK",
+                "Direction": "EAST"
+            }
+        )
+        self.add_tunnel(x + 2, y, "WEST", out_wire)
+
     def add_arithmetic(self, peer_type: str, x: int, y: int, in_a: Wire, in_b: Wire, out: Wire, cin: Optional[Wire] = None, cout: Optional[Wire] = None):
         """Handles Adder, Subtractor, Multiplier, Divider, Shifter."""
         self._add_raw_component(
@@ -284,8 +296,8 @@ class CircuitBuilder:
                 "Bitsize": str(out.bitsize)
             }
         )
-        self.add_tunnel(x - 6, y, "EAST", a)
-        self.add_tunnel(x - 2, y + 2, "NORTH", en)
+        self.add_tunnel(x - 6, y, "EAST", in_a)
+        self.add_tunnel(x - 2, y + 2, "NORTH", in_en)
         self.add_tunnel(x + 3, y, "WEST", out)
 
     def add_register(self, x: int, y: int, in_d: Wire, out_q: Wire,
@@ -571,14 +583,16 @@ def build_bit_registry(module_data, netlist) -> dict:
 
         # Map standard Yosys primitives to their output ports
         output_ports = []
-        if c_type in ["$add", "$sub", "$and", "$or", "$xor", "$not", "$eq", "$gt", "$lt", 
+        if c_type in ["$add", "$sub", "$and", "$or", "$xor", "$not", "$eq", "$ne", "$gt", "$lt", 
                       "$mux", "$pmux", "$logic_not", "$logic_and", "$logic_or", 
-                      "$reduce_or", "$reduce_bool"]:
+                      "$reduce_or", "reduce_and", "$reduce_bool"]:
             output_ports = ["Y"]
         elif c_type in ["$mem", "$mem_v2"]:
             output_ports = ["RD_DATA"]
-        elif c_type == "$dff":
+        elif c_type in ["$dff", "$dffe", "$sdff", "$sdffce", "$sdffe"]:
             output_ports = ["Q"]
+        elif c_type == "cs_clock":
+            output_ports = "clk"
         elif not c_type.startswith("$") or c_type.startswith("$paramod$"):
             # It's a subcircuit; look up its specific output ports in the netlist
             sub_mod = netlist.get("modules", {}).get(c_type, {})
@@ -860,7 +874,15 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
             # print("Original Label Name:", cell_name)
 
             # --- ARITHMETIC ---
-            if not c_type.startswith("$") or c_type.startswith("$paramod$"):
+            if c_type == "cs_clock":
+                out_wire = gw(conns.get("clk", []))
+                compiler.add_clock(x=x, y=y, out_wire=out_wire)
+                continue
+            elif c_type == "cs_probe":
+                in_wire = res(conns.get("val", []))
+                compiler.add_pin(x=x, y=y, wire=in_wire, pin_label=clean_label, is_input=False)
+                continue
+            elif not c_type.startswith("$") or c_type.startswith("$paramod$"):
                 sub_name = c_type.split('\\')[-1].replace('$', '')
 
                 # Fetch port definitions from the netlist to separate inputs from outputs
@@ -884,7 +906,7 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
                     out_wires=out_wires
                 )
 
-            elif c_type in ["$add", "$sub"]:
+            elif c_type in ["$add", "$sub", "$mul"]:
                 out_wire = gw(conns.get("Y", []))
                 target_width = out_wire.bitsize
 
@@ -894,10 +916,20 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
                 a_bits = res(conns.get("A", []))
                 b_bits = res(conns.get("B", []))
 
-                a_wire = get_padded_wire(compiler, grid, a_bits, target_width)
-                b_wire = get_padded_wire(compiler, grid, b_bits, target_width)
+                params = cell_data.get("parameters", {})
+                a_signed = int(params.get("A_SIGNED", "0"), 2) == 1
+                b_signed = int(params.get("B_SIGNED", "0"), 2) == 1
 
-                peer = "AdderPeer" if c_type == "$add" else "SubtractorPeer"
+                a_wire = get_padded_wire(compiler, grid, a_bits, target_width, a_signed)
+                b_wire = get_padded_wire(compiler, grid, b_bits, target_width, b_signed)
+
+                if c_type == "$add":
+                    peer = "AdderPeer"
+                elif c_type == "$sub":
+                    peer = "SubtractorPeer"
+                elif c_type == "$mul":
+                    peer = "MultiplierPeer"
+
                 compiler.add_arithmetic(
                     peer_type=peer, x=x, y=y,
                     in_a=a_wire, in_b=b_wire, out=out_wire,
@@ -911,9 +943,13 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
 
                 a_bits = res(conns.get("A", []))
                 b_bits = res(conns.get("B", []))
+                
+                params = cell_data.get("parameters", {})
+                a_signed = params.get("A_SIGNED", "0") == "1"
+                b_signed = params.get("B_SIGNED", "0") == "1"
 
-                a_wire = get_padded_wire(compiler, grid, a_bits, target_width)
-                b_wire = get_padded_wire(compiler, grid, b_bits, target_width)
+                a_wire = get_padded_wire(compiler, grid, a_bits, target_width, a_signed)
+                b_wire = get_padded_wire(compiler, grid, b_bits, target_width, b_signed)
 
                 gate = c_type.replace("$", "").capitalize()
                 compiler.add_logic_gate(
@@ -929,7 +965,7 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
                 )
 
                 # --- COMPARATORS ---
-            elif c_type in ("$eq", "$gt", "$lt"):
+            elif c_type in ("$eq", "$ne", "$gt", "$lt", "$ge", "$le"):
                 out_wire = gw(conns.get("Y", []))
 
                 a_raw = res(conns.get("A", [])) 
@@ -937,31 +973,66 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
 
                 target_width = max(a_raw.bitsize, b_raw.bitsize)
                 
-                a_wire = get_padded_wire(compiler, grid, a_raw, target_width)
-                b_wire = get_padded_wire(compiler, grid, b_raw, target_width)
+                params = cell_data.get("parameters", {})
+                a_signed = int(params.get("A_SIGNED", "0"), 2) == 1
+                b_signed = int(params.get("B_SIGNED", "0"), 2) == 1
+                
+                a_wire = get_padded_wire(compiler, grid, a_raw, target_width, a_signed)
+                b_wire = get_padded_wire(compiler, grid, b_raw, target_width, b_signed)
 
                 out_eq = out_wire if c_type == "$eq" else None
                 out_gt = out_wire if c_type == "$gt" else None
                 out_lt = out_wire if c_type == "$lt" else None
 
-                params = cell_data.get("parameters", {})
-                is_signed = params.get("A_SIGNED", "0") == "1"
+                tmp_wire = None
+                if c_type == "$ne":
+                    tmp_wire = Wire(f"W_NE_EQ_TEMP_{x}_{y}", out_wire.bitsize)
+                    out_eq = tmp_wire 
+                elif c_type == "$ge":
+                    tmp_wire = Wire(f"W_GE_LT_TEMP_{x}_{y}", out_wire.bitsize)
+                    out_lt = tmp_wire # Route the LESS THAN output to our temp wire
+                elif c_type == "$le":
+                    tmp_wire = Wire(f"W_LE_GT_TEMP_{x}_{y}", out_wire.bitsize)
+                    out_gt = tmp_wire # Route the GREATER THAN output to our temp wire
+
+                is_unsigned_comp = not (a_signed and b_signed)
 
                 compiler.add_comparator(
                     x=x, y=y,
                     in_a=a_wire, in_b=b_wire,
                     out_eq=out_eq, out_greater=out_gt, out_less=out_lt,
-                    is_unsigned=not is_signed
+                    is_unsigned=is_unsigned_comp
                 )
 
-            elif c_type in ["$reduce_bool", "$reduce_or"]:
+                if tmp_wire:
+                    x, y = grid.next() # Grab the next grid spot
+                    compiler.add_not_gate(
+                        x=x, y=y,
+                        in_a=tmp_wire,
+                        out=out_wire
+                    )
+
+            elif c_type in ["$reduce_bool", "$reduce_or", "$reduce_and"]:
                 a_wire = res(conns.get("A", []))
                 zero_bus = res(['0'] * a_wire.bitsize)
+                one_bus = res(['1'] * a_wire.bitsize)
+                out_bus = gw(conns.get("Y", []))
+
+                if c_type == "$reduce_and":
+                    cmp_bus = one_bus 
+                    out_eq = out_bus
+                    out_gt = None
+                else:
+                    cmp_bus = zero_bus
+                    out_eq = None
+                    out_gt = out_bus
+
                 compiler.add_comparator(
                     x=x, y=y,
                     in_a=a_wire,
-                    in_b=zero_bus, # Compare to 0
-                    out_greater=gw(conns.get("Y", [])),
+                    in_b=cmp_bus,
+                    out_eq=out_eq,
+                    out_greater=out_gt,
                     is_unsigned=True
                 )
 
@@ -1110,9 +1181,33 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
                     label=final_label
                 )
             # --- REGISTERS (D-FLIP-FLOPS) ---
-            elif c_type == "$dff":
-                q_bits = tuple(conns.get("Q", []))
+            elif c_type in ["$dff", "$dffe", "$sdff", "$sdffce", "$sdffe"]:
+                out_wire = gw(conns.get("Q", []))
+                in_wire = res(conns.get("D", []))
+                clk_wire = res(conns.get("CLK", []))
 
+                # 1. Check if we need an enable pin. Just default to High.
+                en_conn = conns.get("EN", [])
+                en_wire = res(en_conn) if en_conn else res(['1'])
+
+                rst_conn = conns.get("SRST", [])
+                clr_wire = res(rst_conn) if rst_conn else res(['0']) # If no signal, default to low
+
+                # 2. Handle the $sdffe override (Reset must wake up the register)
+                if c_type == "$sdffe":
+                    # We manually create a Wire here because we are building the source (the OR gate) right now
+                    combined_en = Wire(f"W_SDFFE_EN_{x}_{y}", 1)
+
+                    x_or, y_or = grid.next()
+                    compiler.add_logic_gate(
+                        gate_type="Or", x=x_or, y=y_or, 
+                        in_a=en_wire, in_b=clr_wire, out=combined_en
+                    )
+                    # Overwrite the enable wire so the register uses our new OR gate output
+                    en_wire = combined_en
+
+                # 3. Resolve Custom Labels
+                q_bits = tuple(conns.get("Q", []))
                 final_label = reverse_netnames.get(q_bits, clean_label)
 
                 if (final_label in ["zero", "at", "v0", "a0", "a1", "a2", "t0", "t1", "t2", "s0", "s1", "s2", "k0", "sp", "fp", "ra"]):
@@ -1120,18 +1215,18 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
 
                 final_label = "PC-IF" if final_label == "PC" else final_label
 
-                print("$dff with:", final_label)
+                # print("$dff with:", final_label)
                 compiler.add_register(
                      x=x, y=y,
-                     in_d=res(conns.get("D", [])),
-                     out_q=gw(conns.get("Q", [])),
-                     in_clk=res(conns.get("CLK", [])),
-                     in_en=res(['1']),  # CircuitSim needs Enable HIGH to write
-                     in_clr=res(['0']), # CircuitSim needs Clear LOW to avoid wiping memory
+                     in_d=in_wire,
+                     out_q=out_wire,
+                     in_clk=clk_wire,
+                     in_en=en_wire,
+                     in_clr=clr_wire,
                      label=final_label
                 )
             else:
-                print(f"[!] Unmapped component: {c_type}")
+                print(f"\033[31m[!] Unmapped component: {c_type}\033[0m")
 
     # ========================================================
     # FINAL STEP: Spawn all Constant values detected by Yosys
