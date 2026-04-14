@@ -511,7 +511,7 @@ class CircuitBuilder:
                     old_label = props["Label"]
 
                     # Fixed prefix check: get_wire outputs W_, not WIRE_
-                    if old_label.startswith(("W_", "CONST_", "PMUX_", "L_AND_")):
+                    if old_label.startswith(("W_", "CONST_", "PMUX_", "L_AND_", "L_OR_")):
                         if old_label not in label_map:
                             if old_label.startswith("CONST_"):
                                 label_map[old_label] = f"C_{const_counter:04X}"
@@ -585,7 +585,7 @@ def build_bit_registry(module_data, netlist) -> dict:
         output_ports = []
         if c_type in ["$add", "$sub", "$and", "$or", "$xor", "$not", "$eq", "$ne", "$gt", "$lt", 
                       "$mux", "$pmux", "$logic_not", "$logic_and", "$logic_or", 
-                      "$reduce_or", "reduce_and", "$reduce_bool"]:
+                      "$reduce_or", "$reduce_and", "$reduce_bool"]:
             output_ports = ["Y"]
         elif c_type in ["$mem", "$mem_v2"]:
             output_ports = ["RD_DATA"]
@@ -766,6 +766,13 @@ def get_padded_wire(compiler: CircuitBuilder, grid: GridAllocator, original_wire
         return original_wire
 
     if original_wire.bitsize >= target_width:
+        """
+        truncated_wire = Wire(f"{original_wire.label}_TRUNC_{target_width}", target_width)
+        dummy_drop = Wire(None, original_wire.bitsize - target_width)
+        x, y = grid.next()
+        compiler.add_splitter(x, y, original_wire, [truncated_wire])
+        return truncated_wire
+        """
         return original_wire
 
     # We need padding. Create a unique target wire for the padded output.
@@ -1186,36 +1193,82 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
                 in_wire = res(conns.get("D", []))
                 clk_wire = res(conns.get("CLK", []))
 
+                params = cell_data.get("parameters", {})
+
+                print(f"Starting {c_type} named {clean_label}")
+
                 # 1. Check if we need an enable pin. Just default to High.
                 en_conn = conns.get("EN", [])
                 en_wire = res(en_conn) if en_conn else res(['1'])
 
+                # And check if Yosys decided to make this Active-Low instead of the standard Active-High
+                if en_conn and int(params.get("EN_POLARITY", "1"), 2) == 0:
+                    inverted_en = Wire(f"W_INV_EN_{x}_{y}", 1)
+                    x_not, y_not = grid.next()
+                    compiler.add_not_gate(x=x_not, y=y_not, in_a=en_wire, out=inverted_en)
+                    en_wire = inverted_en
+                
+                # 2. Reset Pin Setup
+                # Synchronous Reset, which is an issue since our registers are Asynchronous
                 rst_conn = conns.get("SRST", [])
-                clr_wire = res(rst_conn) if rst_conn else res(['0']) # If no signal, default to low
+                clr_wire = res(['0']) # Tie CLR to 0
 
-                # 2. Handle the $sdffe override (Reset must wake up the register)
-                if c_type == "$sdffe":
-                    # We manually create a Wire here because we are building the source (the OR gate) right now
-                    combined_en = Wire(f"W_SDFFE_EN_{x}_{y}", 1)
+                if rst_conn:
+                    srst_wire = res(rst_conn)
+                    # And also check if RST is Active-Low
+                    if int(params.get("SRST_POLARITY", "1"), 2) == 0:
+                        inverted_rst = Wire(f"W_INV_RST_{x}_{y}", 1)
+                        x_not, y_not = grid.next()
+                        compiler.add_not_gate(x=x_not, y=y_not, in_a=clr_wire, out=inverted_rst)
+                        srst_wire = inverted_rst
 
-                    x_or, y_or = grid.next()
-                    compiler.add_logic_gate(
-                        gate_type="Or", x=x_or, y=y_or, 
-                        in_a=en_wire, in_b=clr_wire, out=combined_en
+                    # Basically, we fix this by putting the Actual Data and 0's into a MUX
+                    # Then, we select whether to reset or not by tying the reset to the MUX
+                    # Then, we use the ouput of the MUX into the Register
+                    # And we also use the Enable Pin to put the data in
+                    # We do not need to tie anything to the actual Register Reset Pin.
+
+                    # Build a MUX to handle the Synchronous Reset
+                    # Yosys outputs parameter values as string arrays (e.g. "00000000")
+                    srst_val_bits = params.get("SRST_VALUE", "0" * in_wire.bitsize)
+                    reset_const_wire = res(list(srst_val_bits))
+
+                    mux_out_wire = Wire(f"W_SDFF_MUX_{x}_{y}", in_wire.bitsize)
+                    x_m, y_m = grid.next()
+                    compiler.add_mux(
+                        x=x_m, y=y_m, sel_bits=1,
+                        in_wires=[in_wire, reset_const_wire],
+                        in_sel=srst_wire,
+                        out=mux_out_wire
                     )
-                    # Overwrite the enable wire so the register uses our new OR gate output
-                    en_wire = combined_en
+
+                    # The D-pin now safely receives the MUX output
+                    in_wire = mux_out_wire
+
+                    # If the DFF has an enable, a synchronous RST must force
+                    # enable HIGH so that the register wakes up to capture the '0 from the MUX
+                    if c_type == "$sdffe":
+                        # We manually create a Wire here because we are building the source (the OR gate) right now
+                        combined_en = Wire(f"W_SDFFE_EN_{x}_{y}", 1)
+
+                        x_or, y_or = grid.next()
+                        compiler.add_logic_gate(
+                            gate_type="Or", x=x_or, y=y_or, 
+                            in_a=en_wire, in_b=srst_wire, out=combined_en
+                        )
+                        # Overwrite the enable wire so the register uses our new OR gate output
+                        en_wire = combined_en
 
                 # 3. Resolve Custom Labels
                 q_bits = tuple(conns.get("Q", []))
                 final_label = reverse_netnames.get(q_bits, clean_label)
+                print(f"Found final label {final_label}")
 
                 if (final_label in ["zero", "at", "v0", "a0", "a1", "a2", "t0", "t1", "t2", "s0", "s1", "s2", "k0", "sp", "fp", "ra"]):
                     final_label = "$" + final_label
 
                 final_label = "PC-IF" if final_label == "PC" else final_label
 
-                # print("$dff with:", final_label)
                 compiler.add_register(
                      x=x, y=y,
                      in_d=in_wire,

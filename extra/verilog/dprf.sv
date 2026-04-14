@@ -22,10 +22,9 @@ module dprf(
     // There is no array here, so Yosys CANNOT infer RAM!
     always_ff @(posedge clk) begin
         // Again, just keep zero alive as a register for Autograder
-        zero <= 32'd0;
-
         if (we) begin
             case (regno_write)
+                4'd0:  zero <= 32'd0;
                 4'd1:  at <= write_data;
                 4'd2:  v0 <= write_data;
                 4'd3:  a0 <= write_data;

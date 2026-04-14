@@ -11,5 +11,13 @@ Third Attempt:
 Changed Default Branch Policy to Branch Taken Backwards, Not Taken Forwards.
 POW: 1344, FIB: 6213, TWO_SUM: 2395
 
-Fourth Attempt:
+Fourth Attempt V1 (Not submittable yet):
 Added 8-Set, 8-Way BTB with Default Branch Policy for Misses still BTFNT.
+
+Fourth Attempt V2 (Submitted First, even though implemented 2nd):
+Was having issues with all these new register types,
+and that exposed multiple minor bugs in the compiler that have now been squashed.
+Also, the 8-Set, 8-Way BTB was so massive that CircuitSim was taking forever to load.
+Need to do component optimization / reduction next.
+Converted to a 2-Set, 2-Way BTB just for testing.
+
