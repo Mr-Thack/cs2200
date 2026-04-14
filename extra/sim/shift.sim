@@ -1,0 +1,38 @@
+{
+  "version": "1.11.2-CE",
+  "globalBitSize": 1,
+  "clockSpeed": 1,
+  "circuits": [
+    {
+      "name": "New circuit",
+      "components": [
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.arithmetic.ShifterPeer",
+          "x": 30,
+          "y": 15,
+          "properties": {
+            "Label location": "NORTH",
+            "Label": "",
+            "Shift Type": "LOGICAL LEFT",
+            "Bitsize": "1"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.arithmetic.ShifterPeer",
+          "x": 30,
+          "y": 27,
+          "properties": {
+            "Label location": "NORTH",
+            "Label": "",
+            "Shift Type": "LOGICAL RIGHT",
+            "Bitsize": "32"
+          }
+        }
+      ],
+      "wires": []
+    }
+  ],
+  "revisionSignatures": [
+    "CTFjZDVmM2IwZGU0OTcyYWNjODMyNWI5NGI2YzAyOGU2OTIzZDMzZDBkMDAwMWEzOTg0ZjcwMTQ2MTZlYjRhMjcJMTc3NjE5Mzc3OTYzMgk4NTA4ZjNkZGFjZjQ3YjE3ZmUyYWVkMTA2NDkwNDAzZGY4NGU0MzJmMWNmMzA2YzNjYjYxZTZlYmEwYjRhODAw"
+  ]
+}

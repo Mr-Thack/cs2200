@@ -4,6 +4,7 @@ import base64
 import json
 from dataclasses import dataclass
 from typing import Optional, List
+import math
 
 # ==========================================
 # DATA MODELS
@@ -212,6 +213,21 @@ class CircuitBuilder:
         self.add_tunnel(x + 4, y + 1, "WEST",  out)
         self.add_tunnel(x - 1, y - 3, "SOUTH", cin)
         self.add_tunnel(x - 1, y + 4, "NORTH", cout)
+
+    def add_shifter(self, x: int, y: int, in_a: Wire, in_b: Wire, out: Wire, shift_type: str):
+        """Handles Shifter operations (LOGICAL LEFT, LOGICAL RIGHT, ARITHMETIC RIGHT)."""
+        self._add_raw_component(
+            "com.ra4king.circuitsim.gui.peers.arithmetic.ShifterPeer", x, y,
+            {
+                "Label location": "NORTH",
+                "Label": "",
+                "Bitsize": str(out.bitsize),
+                "Shift Type": shift_type
+            }
+        )
+        self.add_tunnel(x - 6, y,     "EAST",  in_a)
+        self.add_tunnel(x - 6, y + 2, "EAST",  in_b)
+        self.add_tunnel(x + 4, y + 1, "WEST",  out)
 
     def add_comparator(self, x: int, y: int, in_a: Wire, in_b: Wire,
                        out_less: Optional[Wire] = None,
@@ -585,7 +601,8 @@ def build_bit_registry(module_data, netlist) -> dict:
         output_ports = []
         if c_type in ["$add", "$sub", "$and", "$or", "$xor", "$not", "$eq", "$ne", "$gt", "$lt", 
                       "$mux", "$pmux", "$logic_not", "$logic_and", "$logic_or", 
-                      "$reduce_or", "$reduce_and", "$reduce_bool"]:
+                      "$reduce_or", "$reduce_and", "$reduce_bool",
+                      "$shl", "$shr", "$sshl", "$sshr"]:
             output_ports = ["Y"]
         elif c_type in ["$mem", "$mem_v2"]:
             output_ports = ["RD_DATA"]
@@ -943,6 +960,49 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
                     cin=cin_wire
                 )
 
+            # --- SHIFTERS ---
+            elif c_type in ["$shl", "$shr", "$sshl", "$sshr"]:
+                out_wire = gw(conns.get("Y", []))
+                target_width = out_wire.bitsize
+
+                a_raw = res(conns.get("A", []))
+                b_raw = res(conns.get("B", []))
+
+                params = cell_data.get("parameters", {})
+                a_signed = int(params.get("A_SIGNED", "0"), 2) == 1
+                b_signed = int(params.get("B_SIGNED", "0"), 2) == 1
+
+                # CircuitSim shifter's 'B' input must exactly match ceil(log2(bitsize))
+                b_target_width = max(1, math.ceil(math.log2(target_width)))
+
+                a_wire = get_padded_wire(compiler, grid, a_raw, target_width, a_signed)
+
+                # Handle B wire sizing strictly
+                if b_raw.bitsize > b_target_width:
+                    b_wire = Wire(f"W_SHF_TRUNC_{x}_{y}", b_target_width)
+                    dummy_drop = Wire(None, b_raw.bitsize - b_target_width)
+                    # Splitter truncates the upper bits and drops them into a dummy void
+                    compiler.add_splitter(x, y, b_raw, [b_wire, dummy_drop])
+                    x, y = grid.next() # Advance grid since we dropped a splitter hardware
+                else:
+                    b_wire = get_padded_wire(compiler, grid, b_raw, b_target_width, b_signed)
+
+                # Determine Shift Type
+                shift_type = "LOGICAL LEFT"
+                if c_type in ["$shr", "$sshr"]:
+                    if a_signed:
+                        shift_type = "ARITHMETIC RIGHT"
+                    else:
+                        shift_type = "LOGICAL RIGHT"
+                elif c_type == "$sshl":
+                    shift_type = "LOGICAL LEFT"
+
+                compiler.add_shifter(
+                    x=x, y=y,
+                    in_a=a_wire, in_b=b_wire, out=out_wire,
+                    shift_type=shift_type
+                )
+
                 # --- LOGIC GATES ---
             elif c_type in ["$and", "$or", "$xor"]:
                 out_wire = gw(conns.get("Y", []))
@@ -1195,7 +1255,7 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
 
                 params = cell_data.get("parameters", {})
 
-                print(f"Starting {c_type} named {clean_label}")
+                # print(f"Starting {c_type} named {clean_label}")
 
                 # 1. Check if we need an enable pin. Just default to High.
                 en_conn = conns.get("EN", [])
@@ -1262,7 +1322,7 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
                 # 3. Resolve Custom Labels
                 q_bits = tuple(conns.get("Q", []))
                 final_label = reverse_netnames.get(q_bits, clean_label)
-                print(f"Found final label {final_label}")
+                # print(f"Found final label {final_label}")
 
                 if (final_label in ["zero", "at", "v0", "a0", "a1", "a2", "t0", "t1", "t2", "s0", "s1", "s2", "k0", "sp", "fp", "ra"]):
                     final_label = "$" + final_label

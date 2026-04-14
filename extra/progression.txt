@@ -21,3 +21,9 @@ Also, the 8-Set, 8-Way BTB was so massive that CircuitSim was taking forever to 
 Need to do component optimization / reduction next.
 Converted to a 2-Set, 2-Way BTB just for testing.
 
+Fourth Attempt V3 (Actually Submitted and Working, even though implemeneted 3rd):
+Set Associative Cache backend for BTB waaayyy too die-space-consuming,
+so simplified to a Direct Mapped Cache, but not working fast enough, surprisingly...
+But, after imposing a HALT after 3k cycles, I found:
+POW: 1322, FIB: CRASH, TWO_SUM: 2395
+I guess that makes sense since our BTB is too small to be useful.

@@ -1,134 +1,109 @@
-// Metadata struct (19 bits total)
+// A single, unified 32-bit entry
 typedef struct packed {
-    logic       valid; // 1 bit
-    logic [14:0] tag;  // 15 bits
-    logic [1:0]  mode; // 2 bits
-    logic  age;  // 1 bit
-} btb_meta_t;
+    logic        valid;  // 1 bit
+    logic [12:0]  tag;    // 13 bits (PC[15:3]) [SIZE]
+    logic [1:0]  mode;   // 2 bits  (Saturating counter)
+    logic [15:0] target; // 16 bits (Branch Target)
+} btb_entry_t; 
 
 module btb (
-    input logic clk,
-    input logic rst,
+    input  logic clk,
+    input  logic rst,
 
     // READ PORT (Fetch Stage)
-    input  logic [31:0]   read_pc,
-    output btb_read_data  rdata, 
+    input  logic [31:0]  read_pc,
+    output btb_read_data rdata, 
 
     // WRITE PORT (Execute Stage)
     input  btb_write_data wdata
 );
 
-// ==========================================
-// CACHE MEMORY (Split to bypass >32b limits)
-// ==========================================
-// btb_meta_t   btb_meta   [64]; // [8 Sets][8 Ways]
-// logic [31:0] btb_target [64]; // [8 Sets][8 Ways]
-btb_meta_t   btb_meta   [4]; // [2 Sets][2 Ways]
-logic [31:0] btb_target [4]; // [2 Sets][2 Ways]
+// [SIZE]
+// Our single array of 8 discrete size(btb_entry_t) registers
+btb_entry_t btb_array [8]; 
 
 // ==========================================
-// READ PORT: Combinational Search
+// READ PORT: Combinational Read
 // ==========================================
-logic  read_set;
-logic [14:0] read_tag;
+logic [2:0] read_idx; // [SIZE]
+logic [12:0] read_tag; // [SIZE]
 
-assign read_set = read_pc[0];
-assign read_tag = read_pc[15:1];
+assign read_idx = read_pc[2:0]; // [SIZE]
+assign read_tag = read_pc[15:3]; // [SIZE]
+
+btb_entry_t active_entry;
+assign active_entry = btb_array[read_idx];
 
 always_comb begin
     rdata.valid  = 1'b0;
     rdata.take   = 1'b0;
     rdata.target = 32'd0;
 
-    // Search both 2 ways in the set simultaneously
-    for (int i = 0; i < 2; i++) begin
-        logic [1:0] idx = {read_set, i[0]}; // Convert to 2 bit flat index
-        if (btb_meta[idx].valid && btb_meta[idx].tag == read_tag) begin
-            rdata.valid  = 1'b1;
-            rdata.target = btb_target[idx];
-            rdata.take   = (btb_meta[idx].mode >= 2'b10); // Take if Weakly or Strongly Taken
-        end
+    if (active_entry.valid && active_entry.tag == read_tag) begin
+        rdata.valid  = 1'b1;
+        // Pad the 16-bit stored target back to 32 bits at zero cost
+        rdata.target = {16'd0, active_entry.target};
+        rdata.take   = (active_entry.mode >= 2'b10); 
     end
 end
 
 // ==========================================
-// WRITE PORT LOGIC: Find Hit / LRU Index
+// WRITE PORT: Calculate Next State
 // ==========================================
-logic  up_set;
-logic [14:0] up_tag;
+logic [2:0] up_idx; // [SIZE]
+logic [12:0] up_tag; // [SIZE]
 
-assign up_set = wdata.pc[0];
-assign up_tag = wdata.pc[15:1];
+assign up_idx = wdata.pc[2:0];
+assign up_tag = wdata.pc[15:3];
 
-logic       hit;
-logic target_way; 
-logic old_age;
+btb_entry_t current_entry;
+btb_entry_t next_entry;
+
+assign current_entry = btb_array[up_idx];
 
 always_comb begin
-    hit        = 1'b0;
-    target_way = 1'd0;
-    old_age    = 1'd1; // Default to oldest
+    // Default: keep exactly what's there
+    next_entry = current_entry;
 
-    // Step 1: Does this branch already exist in the cache?
-    for (int i = 0; i < 2; i++) begin
-        logic [1:0] idx = {up_set, i[0]}; // Convert to 2 bit flat index
-        if (btb_meta[idx].valid && btb_meta[idx].tag == up_tag) begin
-            hit        = 1'b1;
-            target_way = i[0];
-            old_age    = btb_meta[idx].age;
+    if (current_entry.valid && current_entry.tag == up_tag) begin
+        // Hit: Update the saturating counter
+        if (wdata.taken && current_entry.mode < 2'b11) begin 
+            next_entry.mode = current_entry.mode + 2'd1;
+        end else if (!wdata.taken && current_entry.mode > 2'b00) begin 
+            next_entry.mode = current_entry.mode - 2'd1;
         end
-    end
-
-    // Step 2: If no hit, find the LRU (age == 1) or an invalid slot
-    if (!hit) begin
-        for (int i = 0; i < 2; i++) begin
-            logic [1:0] idx = {up_set, i[0]}; // Convert to 2 bit flat index
-            if (!btb_meta[idx].valid || btb_meta[idx].age == 1'd1) begin
-                target_way = i[0];
-            end
-        end
+        // Refresh the target just in case, though it shouldn't normally change on a hit
+        next_entry.target = wdata.target[15:0];
+    end else begin
+        // Miss: Evict and allocate 
+        next_entry.valid  = 1'b1;
+        next_entry.tag    = up_tag;
+        next_entry.mode   = wdata.taken ? 2'b10 : 2'b01; 
+        next_entry.target = wdata.target[15:0]; // Slice the bottom 16 bits
     end
 end
 
 // ==========================================
-// WRITE PORT EXECUTION: Clocked Update
+// WRITE PORT EXECUTION: The Generate Loop
 // ==========================================
+
+// [SIZE]
+logic [7:0] write_decode;
+// Forcing this into a MUX instead of a bunch of MUX's and Splitter's
+// [SIZE]
+assign write_decode = (wdata.write && wdata.pc != '0) ? (8'd1 << up_idx) : '0;
+
 genvar i;
-generate for (i = 0; i < 4; i++) begin : BTB_REGS
+generate
+// [SIZE]
+for (i = 0; i < 8; i++) begin : BTB_REGS
     always_ff @(posedge clk) begin
         if (rst) begin
-            btb_meta[i]     <= '0;
-            btb_meta[i].age <= i[0]; // Initialize LRU ages 0 to 1
-            btb_target[i]   <= '0;
-        end else if (wdata.write && wdata.pc != 32'd0) begin
-
-            if (i[1] == up_set) begin
-                if (i[0] == target_way) begin
-                    // Update the Target Way Metadata & Address
-                    btb_meta[i].valid <= 1'b1;
-                    btb_meta[i].tag   <= up_tag;
-                    btb_meta[i].age   <= 1'd0; // Mark as most recently used (youngest)
-                    btb_target[i]     <= wdata.target;
-
-                    // Saturating Counter Logic
-                    if (hit) begin
-                        if (wdata.taken && btb_meta[i].mode < 2'b11) begin 
-                            btb_meta[i].mode <= btb_meta[i].mode + 2'd1;
-                        end else if (!wdata.taken && btb_meta[i].mode > 2'b00) begin 
-                            btb_meta[i].mode <= btb_meta[i].mode - 2'd1;
-                        end
-                    end else begin
-                        // New allocation: Initialize prediction based on outcome
-                        btb_meta[i].mode <= wdata.taken ? 2'b10 : 2'b01; 
-                    end
-                end else begin
-                    // Different Way but in same set, so age it
-                    if (btb_meta[i].valid && btb_meta[i].age < old_age) begin
-                        btb_meta[i].age <= btb_meta[i].age + 1'd1;
-                    end
-                end
-            end
-
+            // Only clear the valid bit to save routing overhead on reset
+            btb_array[i].valid <= '0;
+        end else if (write_decode[i]) begin
+            // Single, clean assignment
+            btb_array[i] <= next_entry;
         end
     end
 end
