@@ -857,7 +857,74 @@ def get_padded_wire(compiler: CircuitBuilder, grid: GridAllocator, original_wire
 
     return padded_wire
 
+def _replace_bit_in_module(mod_data: dict, old_bit: int, new_bit):
+    """
+    Helper function: Sweeps the entire module and rewires any connection 
+    looking for `old_bit` to point to `new_bit` instead.
+    """
+    # Reroute Ports
+    for port in mod_data.get("ports", {}).values():
+        port["bits"] = [new_bit if b == old_bit else b for b in port.get("bits", [])]
 
+    # Reroute Cells
+    for cell in mod_data.get("cells", {}).values():
+        for conn_name, bits in cell.get("connections", {}).items():
+            cell["connections"][conn_name] = [new_bit if b == old_bit else b for b in bits]
+
+def optimize_constant_muxes(netlist: dict) -> dict:
+    """
+    Pre-traversal pass: Finds 1-bit $mux cells operating purely on constants.
+    - If 0 / 1: Deletes the MUX and aliases the wire directly.
+    - If 1 / 0: Demotes the MUX to a smaller $not gate.
+    - If same / same: Deletes the MUX and aliases the wire to the constant.
+    """
+    for mod_name, mod_data in netlist.get("modules", {}).items():
+        cells = mod_data.get("cells", {})
+        cells_to_delete = []
+
+        for cell_name, cell_data in cells.items():
+            if cell_data.get("type") == "$mux":
+                conns = cell_data.get("connections", {})
+                a_conn = conns.get("A", [])
+                b_conn = conns.get("B", [])
+                s_conn = conns.get("S", [])
+                y_conn = conns.get("Y", [])
+
+                # Check if it's a 1-bit MUX
+                if len(a_conn) == 1 and len(b_conn) == 1 and len(y_conn) == 1:
+                    a_val = a_conn[0]
+                    b_val = b_conn[0]
+
+                    # Ensure both inputs A and B are hardcoded strings (constants)
+                    if isinstance(a_val, str) and isinstance(b_val, str):
+                        y_bit = y_conn[0]
+                        s_bit = s_conn[0]
+
+                        if a_val == "0" and b_val == "1":
+                            # Case 1: Y = S. Bypass MUX entirely!
+                            _replace_bit_in_module(mod_data, y_bit, s_bit)
+                            cells_to_delete.append(cell_name)
+
+                        elif a_val == "1" and b_val == "0":
+                            # Case 2: Y = NOT S. Demote MUX to a NOT gate.
+                            cell_data["type"] = "$not"
+                            # A NOT gate only takes input "A", so we map the selector to A
+                            cell_data["connections"] = {
+                                    "A": s_conn,
+                                    "Y": y_conn
+                                    }
+                            # We leave this cell in the dictionary, just mutated
+
+                        elif a_val == b_val: 
+                            # Case 3: Both inputs are the same. Y is a constant.
+                            _replace_bit_in_module(mod_data, y_bit, a_val)
+                            cells_to_delete.append(cell_name)
+
+        # Cleanup: Actually remove the bypassed gates from the JSON tree
+        for c in cells_to_delete:
+            del cells[c]
+
+    return netlist
 
 def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
     """
@@ -865,6 +932,8 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
     """
     with open(json_file_path, 'r') as f:
         netlist = json.load(f)
+
+    netlist = optimize_constant_muxes(netlist)
 
     X_SPACING = 25 
     Y_SPACING = 25 
