@@ -180,7 +180,7 @@ class CircuitBuilder:
                 "Address bits": str(addr_bits)
             }
         )
-        self.add_tunnel(x - 7, y + 1, "EAST",  in_addr)
+        self.add_tunnel(x - 6, y + 1, "EAST",  in_addr)
         self.add_tunnel(x + 9, y + 1, "WEST",  out_data)
         self.add_tunnel(x + 1, y + 5, "NORTH", in_en)
 
@@ -1712,15 +1712,7 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
                 # Fetch the flattened connection arrays
                 rd_addr_flat = conns.get("RD_ADDR", [])
                 rd_data_flat = conns.get("RD_DATA", [])
-                wr_data_flat = conns.get("WR_DATA", [])
-
-                # Extract the 1-bit Write Enable signal from the array
                 wr_en_array = conns.get("WR_EN", [])
-                rd_en_array = conns.get("RD_EN", [])
-
-
-                str_wire = res([wr_en_array[0]] if wr_en_array else [])
-                ld_wire = res([rd_en_array[0]] if rd_en_array else ['1']) # Default LD to 1 if missing
 
                 match clean_label:
                     case "IMEM":
@@ -1730,23 +1722,56 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
                     case _:
                         final_label = clean_label
 
-                # print("Writing Memory with label:", clean_label)
+                is_rom = (not wr_en_array or all((b == '0' or b == 0) for b in wr_en_array)) and not final_label == "I-MEM"
 
-                # Standard Single-Port RAM (Your standard Instruction/Data memory)
-                compiler.add_ram(
-                    x=x, y=y,
-                    addr_bits=addr_bits,
-                    data_bits=width,
-                    in_addr=res(rd_addr_flat), 
-                    in_data=res(wr_data_flat),
-                    out_data=gw(rd_data_flat),
-                    in_clk=res(conns.get("WR_CLK", [])),
-                    in_en=res(['1']), # Always Tie Enable to High
-                    in_ld=ld_wire,
-                    in_str=str_wire,
-                    in_clr=res(['0']),  # Always Tie Reset to Low
-                    label=final_label
-                )
+                if is_rom:
+                    # Yosys stores ROM contents in the INIT parameter as a massive string.
+                    # We need to chunk it into integers.
+                    init_str = params.get("INIT", "").zfill((2 ** addr_bits) * width)
+                    contents_array = []
+
+                    # Read the chunks (Note: Yosys INIT strings are usually LSB-first chunked, 
+                                       # meaning the last chunk in the string is index 0. You may need to reverse this!)
+                    for i in range(0, len(init_str), width):
+                        chunk = init_str[i : i + width]
+                        chunk = chunk.replace('x', '0').replace('z', '0')
+                        contents_array.append(int(chunk, 2))
+
+                    contents_array.reverse() # Usually required for Yosys INIT parsing
+
+                    compiler.add_rom(
+                        x=x, y=y,
+                        addr_bits=addr_bits,
+                        contents_array=contents_array,
+                        in_addr=res(rd_addr_flat),
+                        out_data=gw(rd_data_flat),
+                        in_en=res(['1']) # Always enabled
+                    )
+                else:
+                    wr_data_flat = conns.get("WR_DATA", [])
+                    rd_en_array = conns.get("RD_EN", [])
+
+                    str_wire = res([wr_en_array[0]] if wr_en_array else [])
+                    ld_wire = res([rd_en_array[0]] if rd_en_array else ['1']) # Default LD to 1 if missing
+
+
+                    # print("Writing Memory with label:", clean_label)
+
+                    # Standard Single-Port RAM (Your standard Instruction/Data memory)
+                    compiler.add_ram(
+                        x=x, y=y,
+                        addr_bits=addr_bits,
+                        data_bits=width,
+                        in_addr=res(rd_addr_flat), 
+                        in_data=res(wr_data_flat),
+                        out_data=gw(rd_data_flat),
+                        in_clk=res(conns.get("WR_CLK", [])),
+                        in_en=res(['1']), # Always Tie Enable to High
+                        in_ld=ld_wire,
+                        in_str=str_wire,
+                        in_clr=res(['0']),  # Always Tie Reset to Low
+                        label=final_label
+                    )
             # --- REGISTERS (D-FLIP-FLOPS) ---
             elif c_type in ["$dff", "$dffe", "$sdff", "$sdffce", "$sdffe"]:
                 out_wire = gw(conns.get("Q", []))
