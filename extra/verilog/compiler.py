@@ -647,7 +647,8 @@ def build_bit_registry(module_data, netlist) -> dict:
                       "$mux", "$pmux",
                       "$logic_not", "$logic_and", "$logic_or", 
                       "$reduce_or", "$reduce_and", "$reduce_bool",
-                      "$shl", "$shr", "$sshl", "$sshr"]:
+                      "$shl", "$shr", "$sshl", "$sshr",
+                      "$cs_folded_mux"]:
             output_ports = ["Y"]
         elif c_type == "$cs_mega_comparator":
             # Dynamically grab all output ports we created (Y_EQ, Y_LT, Y_GE, etc.)
@@ -859,6 +860,10 @@ def get_padded_wire(compiler: CircuitBuilder, grid: GridAllocator, original_wire
     # print(f"Adding Padding for {original_wire.label} to {padded_wire.label}")
 
     return padded_wire
+
+# ========== #
+# Optimizers #
+# ========== #
 
 def _replace_bit_in_module(mod_data: dict, old_bit: int, new_bit):
     """
@@ -1077,6 +1082,122 @@ def optimize_1bit_comparators(netlist: dict) -> dict:
 
     return netlist
 
+def optimize_mux_chains(netlist: dict) -> dict:
+    """
+    Pre-traversal pass: Folds cascading 2-to-1 $mux cells into native 
+    CircuitSim Multiplexers. Safely breaks chains into sub-chains if 
+    an intermediate value is tapped by side-channel logic.
+    """
+    for mod_name, mod_data in netlist.get("modules", {}).items():
+        cells = mod_data.get("cells", {})
+
+        # 1. Map MUX drivers: Y_tuple -> cell_name
+        mux_drivers = {}
+        for c_name, c_data in cells.items():
+            if c_data.get("type") == "$mux" and len(c_data.get("connections", {}).get("S", [])) == 1:
+                mux_drivers[tuple(c_data["connections"]["Y"])] = c_name
+
+        # 2. Track every single bit consumer to detect side-channel taps
+        input_consumers = {} # bit -> list of (cell_name, port_name)
+        for c_name, c_data in cells.items():
+            for port, bits in c_data.get("connections", {}).items():
+                if port not in ["Y", "Q", "RD_DATA"]: # It's an input port
+                    for b in bits:
+                        if isinstance(b, int):
+                            input_consumers.setdefault(b, []).append((c_name, port))
+
+        for p_name, p_data in mod_data.get("ports", {}).items():
+            if p_data.get("direction") == "output":
+                for b in p_data.get("bits", []):
+                    if isinstance(b, int):
+                        input_consumers.setdefault(b, []).append(("MODULE_OUT", p_name))
+
+        # 3. Determine which MUXes can be safely absorbed
+        def is_safely_subsumed(mux_name):
+            y_bits = cells[mux_name]["connections"]["Y"]
+            consumer_cell = None
+            for b in y_bits:
+                if not isinstance(b, int): continue # Skip constants
+                consumers = input_consumers.get(b, [])
+
+                if len(consumers) != 1: return False # Tapped by multiple gates!
+
+                c_name, c_port = consumers[0]
+                if c_port != "A": return False # Tapped by a non-A port!
+                if cells.get(c_name, {}).get("type") != "$mux": return False
+
+                if consumer_cell is None: consumer_cell = c_name
+                elif consumer_cell != c_name: return False # Bits split across different cells!
+            return True
+
+        # 4. Find all "Heads" (MUXes that MUST physically output their Y values)
+        all_muxes = list(mux_drivers.values())
+        heads = [m for m in all_muxes if not is_safely_subsumed(m)]
+
+        # 5. Build Sub-Chains and Fold
+        cells_to_delete = set()
+        for head_name in heads:
+            if head_name not in cells: continue 
+
+            curr_name = head_name
+            chain = [] 
+
+            while curr_name and len(chain) < 5: 
+                chain.append((curr_name, cells[curr_name]))
+                a_tup = tuple(cells[curr_name]["connections"]["A"])
+
+                driver_name = mux_drivers.get(a_tup)
+                # If the driver is safely subsumed, we keep extending the chain!
+                if driver_name and is_safely_subsumed(driver_name):
+                    curr_name = driver_name
+                else:
+                    # CHAIN BREAKS! If driver_name is tapped, it acts as the 
+                    # Head of its OWN sub-chain. We stop absorbing here.
+                    curr_name = None 
+
+            if len(chain) < 2:
+                continue 
+
+            chain.reverse() # Tail (lowest priority) at index 0, Head at index -1
+
+            tail_data = chain[0][1]
+            head_data = chain[-1][1]
+
+            default_A = tail_data["connections"]["A"]
+            y_out = head_data["connections"]["Y"]
+
+            chain_B = [c["connections"]["B"] for name, c in chain]
+            chain_S = [c["connections"]["S"][0] for name, c in chain]
+
+            n = len(chain)
+            num_inputs = 2 ** n
+
+            flat_data = []
+            for i in range(num_inputs):
+                val = default_A
+                for bit_idx in range(n):
+                    if (i & (1 << bit_idx)) != 0:
+                        val = chain_B[bit_idx]
+                flat_data.extend(val)
+
+            mega_name = f"\\CS_FOLDED_MUX_{head_name}"
+            cells[mega_name] = {
+                "type": "$cs_folded_mux",
+                "connections": {
+                    "A": flat_data,  
+                    "S": chain_S,    
+                    "Y": y_out
+                }
+            }
+
+            for name, c in chain:
+                cells_to_delete.add(name)
+
+        for c in cells_to_delete:
+            if c in cells: del cells[c]
+
+    return netlist
+
 def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
     """
     The main compilation loop.
@@ -1086,10 +1207,14 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
 
     netlist = optimize_constant_muxes(netlist)
     netlist = optimize_1bit_comparators(netlist)
+    netlist = optimize_mux_chains(netlist)
     netlist = optimize_comparator_groups(netlist)
 
+    # with open("pipeline.json", "w") as f:
+    #    json.dump(netlist['modules']['pipeline'], f, indent=4)
+
     X_SPACING = 25 
-    Y_SPACING = 25 
+    Y_SPACING = 50 
     X_INIT = 50
     Y_INIT = 50
     
@@ -1471,6 +1596,30 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
                     in_wires=[res(conns.get("A", [])), res(conns.get("B", []))],
                     in_sel=res(conns.get("S", [])),
                     out=gw(conns.get("Y", []))
+                )
+
+            # --- FOLDED MULTIPLEXERS ---
+            elif c_type == "$cs_folded_mux":
+                out_wire = gw(conns.get("Y", []))
+                target_width = out_wire.bitsize
+
+                a_flat = conns.get("A", [])
+                s_flat = conns.get("S", [])
+
+                sel_bits = len(s_flat)
+                num_inputs = 2 ** sel_bits
+
+                in_wires = []
+                for i in range(num_inputs):
+                    # Slice the massive flat array back into distinct wire requests
+                    chunk = a_flat[i * target_width : (i + 1) * target_width]
+                    in_wires.append(res(chunk))
+
+                compiler.add_mux(
+                    x=x, y=y, sel_bits=sel_bits,
+                    in_wires=in_wires,
+                    in_sel=res(s_flat), # Your resolve function automatically builds the merger splitter!
+                    out=out_wire
                 )
 
             elif c_type == "$pmux":
