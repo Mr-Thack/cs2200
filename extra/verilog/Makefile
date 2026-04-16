@@ -35,7 +35,7 @@ runtest: test
 # --- Step 2: Yosys synthesis ---
 netlist: verilog
 	@echo "--- Synthesizing Netlist ---"
-	yosys -p "read_verilog -sv $(V_SRCS) Datapath.sv; prep -top Datapath; wreduce; opt_expr; opt_merge; share -aggressive; pmuxtree; opt -full; clean -purge; write_json $(NETLIST)"
+	yosys -p "read_verilog -sv $(V_SRCS) Datapath.sv; prep -top Datapath; wreduce; opt_expr; opt_merge; opt_muxtree; share; opt -full; clean -purge; write_json $(NETLIST)"
 	@echo "--- Netlist Generated ---"
 
 # --- Step 3: CircuitSim generation ---

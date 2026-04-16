@@ -286,6 +286,41 @@ class CircuitBuilder:
         self.add_tunnel(x - 6, y + 2, "EAST", in_b)
         self.add_tunnel(x + 4, y + 1, "WEST", out)
 
+    def add_multi_logic_gate(self, gate_type: str, x: int, y: int, in_wires: List[Wire], out: Wire):
+        """
+        Dynamically sized logic gate (And, Or, Nand, Nor, Xor, Xnor).
+        Accepts a variable number of input wires.
+        """
+        num_inputs = len(in_wires)
+
+        # Base properties
+        properties = {
+            "Number of Inputs": str(num_inputs),
+            "Label location": "NORTH",
+            "Label": "",
+            "Direction": "EAST",
+            "Bitsize": str(out.bitsize)
+        }
+
+        # CircuitSim expects a "Negate X" property for every single input pin
+        for i in range(num_inputs):
+            properties[f"Negate {i}"] = "No"
+
+        self._add_raw_component(
+            f"com.ra4king.circuitsim.gui.peers.gates.{gate_type}GatePeer",
+            x, y + (num_inputs // 2) - 1,
+            properties
+        )
+
+        # Map input tunnels dynamically along the Y-axis
+        for i, in_w in enumerate(in_wires):
+            if (i == num_inputs / 2):
+                i += 1
+            self.add_tunnel(x - 6, y + i, "EAST", in_w)
+
+        # The output pin is dynamically centered based on the number of inputs
+        self.add_tunnel(x + 4 + (1 if num_inputs > 5 else 0), y + (num_inputs // 2), "WEST", out)
+
     def add_not_gate(self, x: int, y: int, in_a: Wire, out: Wire):
         """NOT Gate has a smaller physical footprint."""
         self._add_raw_component(
@@ -1757,8 +1792,8 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
                     for i in range(s_width):
                         index = i + 1 # Offset by 1 because index 0 is the fallback
 
-                    if (index & (1 << k)) != 0:
-                        active_s_wires.append(res([s_flat[i]]))
+                        if (index & (1 << k)) != 0:
+                            active_s_wires.append(res([s_flat[i]]))
 
                     # If no wires trigger this bit, tie it to 0
                     if not active_s_wires:
