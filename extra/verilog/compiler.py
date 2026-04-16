@@ -649,6 +649,9 @@ def build_bit_registry(module_data, netlist) -> dict:
                       "$reduce_or", "$reduce_and", "$reduce_bool",
                       "$shl", "$shr", "$sshl", "$sshr"]:
             output_ports = ["Y"]
+        elif c_type == "$cs_mega_comparator":
+            # Dynamically grab all output ports we created (Y_EQ, Y_LT, Y_GE, etc.)
+            output_ports = [p for p in conns.keys() if p.startswith("Y_")]
         elif c_type in ["$mem", "$mem_v2"]:
             output_ports = ["RD_DATA"]
         elif c_type in ["$dff", "$dffe", "$sdff", "$sdffce", "$sdffe"]:
@@ -926,6 +929,154 @@ def optimize_constant_muxes(netlist: dict) -> dict:
 
     return netlist
 
+def optimize_comparator_groups(netlist: dict) -> dict:
+    """
+    Pre-traversal pass: Groups $eq, $ne, $lt, $le, $gt, $ge cells that share
+    the exact same A and B inputs. Merges them into a single $cs_mega_comparator.
+    """
+    for mod_name, mod_data in netlist.get("modules", {}).items():
+        cells = mod_data.get("cells", {})
+
+        # 1. Signature grouping: (A_bits, B_bits, A_signed, B_signed)
+        groups = {}
+        for cell_name, cell_data in cells.items():
+            c_type = cell_data.get("type")
+            if c_type in ["$eq", "$ne", "$lt", "$le", "$gt", "$ge"]:
+                conns = cell_data.get("connections", {})
+                params = cell_data.get("parameters", {})
+
+                # Tuples make the arrays hashable so they can be dictionary keys
+                sig = (
+                    tuple(conns.get("A", [])), 
+                    tuple(conns.get("B", [])),
+                    params.get("A_SIGNED", "0"),
+                    params.get("B_SIGNED", "0")
+                )
+
+                if sig not in groups:
+                    groups[sig] = []
+                groups[sig].append((cell_name, c_type, conns.get("Y", [])))
+
+        # 2. Merge groups larger than 1
+        for sig, group_cells in groups.items():
+            if len(group_cells) > 1:
+                a_bits, b_bits, a_signed, b_signed = sig
+
+                mega_name = f"\\MEGA_CMP_{group_cells[0][0]}"
+                mega_conns = {"A": list(a_bits), "B": list(b_bits)}
+
+                # Map the old Y outputs to specific ports on the mega comparator
+                for c_name, c_type, y_bits in group_cells:
+                    port_name = c_type.replace("$", "Y_").upper() # e.g., $eq -> Y_EQ
+                    mega_conns[port_name] = y_bits
+                    del cells[c_name] # Erase the redundant hardware
+
+                cells[mega_name] = {
+                    "type": "$cs_mega_comparator",
+                    "parameters": {"A_SIGNED": a_signed, "B_SIGNED": b_signed},
+                    "connections": mega_conns
+                }
+
+    return netlist
+
+def optimize_1bit_comparators(netlist: dict) -> dict:
+    """
+    Pre-traversal pass: Finds 1-bit comparators where one input is a constant.
+    Demotes the comparator to a wire alias, a constant, or a $not gate.
+    """
+    for mod_name, mod_data in netlist.get("modules", {}).items():
+        cells = mod_data.get("cells", {})
+        cells_to_delete = []
+
+        for cell_name, cell_data in cells.items():
+            c_type = cell_data.get("type")
+            if c_type in ["$eq", "$ne", "$lt", "$le", "$gt", "$ge"]:
+                conns = cell_data.get("connections", {})
+                a_conn = conns.get("A", [])
+                b_conn = conns.get("B", [])
+                y_conn = conns.get("Y", [])
+
+                # Must be purely a 1-bit comparison
+                if len(a_conn) == 1 and len(b_conn) == 1 and len(y_conn) == 1:
+                    params = cell_data.get("parameters", {})
+                    a_signed = int(params.get("A_SIGNED", "0"), 2) == 1
+                    b_signed = int(params.get("B_SIGNED", "0"), 2) == 1
+
+                    # Safety check: Only optimize unsigned comparisons
+                    if a_signed or b_signed:
+                        continue
+
+                    a_val = a_conn[0]
+                    b_val = b_conn[0]
+                    y_bit = y_conn[0]
+
+                    is_a_const = isinstance(a_val, str)
+                    is_b_const = isinstance(b_val, str)
+
+                    # If neither are constants, or both are constants, skip.
+                    if is_a_const == is_b_const:
+                        continue
+
+                    const_val = a_val if is_a_const else b_val
+                    wire_bit = b_val if is_a_const else a_val
+
+                    # Map every scenario into an action
+                    action = None
+
+                    if is_b_const: 
+                        # SCENARIO: (Wire CMP Const)
+                        if const_val == "0":
+                                if c_type == "$eq": action = "NOT_WIRE"
+                                elif c_type == "$ne": action = "ALIAS_WIRE"
+                                elif c_type == "$gt": action = "ALIAS_WIRE"
+                                elif c_type == "$lt": action = "CONST_0"
+                                elif c_type == "$ge": action = "CONST_1"
+                                elif c_type == "$le": action = "NOT_WIRE"
+                        elif const_val == "1":
+                            if c_type == "$eq": action = "ALIAS_WIRE"
+                            elif c_type == "$ne": action = "NOT_WIRE"
+                            elif c_type == "$gt": action = "CONST_0"
+                            elif c_type == "$lt": action = "NOT_WIRE"
+                            elif c_type == "$ge": action = "ALIAS_WIRE"
+                            elif c_type == "$le": action = "CONST_1"
+                    else: 
+                        # SCENARIO: (Const CMP Wire)
+                        if const_val == "0":
+                            if c_type == "$eq": action = "NOT_WIRE"
+                            elif c_type == "$ne": action = "ALIAS_WIRE"
+                            elif c_type == "$gt": action = "CONST_0"
+                            elif c_type == "$lt": action = "ALIAS_WIRE"
+                            elif c_type == "$ge": action = "NOT_WIRE"
+                            elif c_type == "$le": action = "CONST_1"
+                        elif const_val == "1":
+                            if c_type == "$eq": action = "ALIAS_WIRE"
+                            elif c_type == "$ne": action = "NOT_WIRE"
+                            elif c_type == "$gt": action = "NOT_WIRE"
+                            elif c_type == "$lt": action = "CONST_0"
+                            elif c_type == "$ge": action = "CONST_1"
+                            elif c_type == "$le": action = "ALIAS_WIRE"
+
+                    # Execute the determined action
+                    if action == "ALIAS_WIRE":
+                        _replace_bit_in_module(mod_data, y_bit, wire_bit)
+                        cells_to_delete.append(cell_name)
+                    elif action == "CONST_0":
+                        _replace_bit_in_module(mod_data, y_bit, "0")
+                        cells_to_delete.append(cell_name)
+                    elif action == "CONST_1":
+                        _replace_bit_in_module(mod_data, y_bit, "1")
+                        cells_to_delete.append(cell_name)
+                    elif action == "NOT_WIRE":
+                        # Keep the cell, but overwrite it to be a NOT gate
+                        cell_data["type"] = "$not"
+                        cell_data["connections"] = {"A": [wire_bit], "Y": [y_bit]}
+
+        # Delete bypassed cells from the JSON dictionary
+        for c in cells_to_delete:
+            del cells[c]
+
+    return netlist
+
 def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
     """
     The main compilation loop.
@@ -934,6 +1085,8 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
         netlist = json.load(f)
 
     netlist = optimize_constant_muxes(netlist)
+    netlist = optimize_1bit_comparators(netlist)
+    netlist = optimize_comparator_groups(netlist)
 
     X_SPACING = 25 
     Y_SPACING = 25 
@@ -1183,9 +1336,7 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
                 )
 
                 # --- COMPARATORS ---
-            elif c_type in ("$eq", "$ne", "$gt", "$lt", "$ge", "$le"):
-                out_wire = gw(conns.get("Y", []))
-
+            elif c_type in ("$eq", "$ne", "$gt", "$lt", "$ge", "$le", "$cs_mega_comparator"):
                 a_raw = res(conns.get("A", [])) 
                 b_raw = res(conns.get("B", []) )
 
@@ -1198,20 +1349,18 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
                 a_wire = get_padded_wire(compiler, grid, a_raw, target_width, safe_mod_name, a_signed)
                 b_wire = get_padded_wire(compiler, grid, b_raw, target_width, safe_mod_name, b_signed)
 
-                out_eq = out_wire if c_type == "$eq" else None
-                out_gt = out_wire if c_type == "$gt" else None
-                out_lt = out_wire if c_type == "$lt" else None
+                # Figure out which output ports we actually need to wire up
+                req_eq = conns.get("Y_EQ", []) if c_type == "$cs_mega_comparator" else (conns.get("Y", []) if c_type == "$eq" else [])
+                req_ne = conns.get("Y_NE", []) if c_type == "$cs_mega_comparator" else (conns.get("Y", []) if c_type == "$ne" else [])
+                req_lt = conns.get("Y_LT", []) if c_type == "$cs_mega_comparator" else (conns.get("Y", []) if c_type == "$lt" else [])
+                req_ge = conns.get("Y_GE", []) if c_type == "$cs_mega_comparator" else (conns.get("Y", []) if c_type == "$ge" else [])
+                req_gt = conns.get("Y_GT", []) if c_type == "$cs_mega_comparator" else (conns.get("Y", []) if c_type == "$gt" else [])
+                req_le = conns.get("Y_LE", []) if c_type == "$cs_mega_comparator" else (conns.get("Y", []) if c_type == "$le" else [])
 
-                tmp_wire = None
-                if c_type == "$ne":
-                    tmp_wire = Wire(f"W_NE_EQ_TEMP_{x}_{y}", out_wire.bitsize)
-                    out_eq = tmp_wire 
-                elif c_type == "$ge":
-                    tmp_wire = Wire(f"W_GE_LT_TEMP_{x}_{y}", out_wire.bitsize)
-                    out_lt = tmp_wire # Route the LESS THAN output to our temp wire
-                elif c_type == "$le":
-                    tmp_wire = Wire(f"W_LE_GT_TEMP_{x}_{y}", out_wire.bitsize)
-                    out_gt = tmp_wire # Route the GREATER THAN output to our temp wire
+                # Map primary outputs directly to the comparator, or to temporary wires if we need to NOT them
+                out_eq = gw(req_eq) if req_eq else (Wire(f"W_TMP_EQ_{x}_{y}", 1) if req_ne else None)
+                out_lt = gw(req_lt) if req_lt else (Wire(f"W_TMP_LT_{x}_{y}", 1) if req_ge else None)
+                out_gt = gw(req_gt) if req_gt else (Wire(f"W_TMP_GT_{x}_{y}", 1) if req_le else None)
 
                 is_unsigned_comp = not (a_signed and b_signed)
 
@@ -1222,13 +1371,16 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
                     is_unsigned=is_unsigned_comp
                 )
 
-                if tmp_wire:
-                    x, y = grid.next() # Grab the next grid spot
-                    compiler.add_not_gate(
-                        x=x, y=y,
-                        in_a=tmp_wire,
-                        out=out_wire
-                    )
+                # Spawn NOT gates for the inverted comparisons if they were requested
+                if req_ne:
+                    x_n, y_n = grid.next()
+                    compiler.add_not_gate(x_n, y_n, out_eq, gw(req_ne))
+                if req_ge:
+                    x_n, y_n = grid.next()
+                    compiler.add_not_gate(x_n, y_n, out_lt, gw(req_ge))
+                if req_le:
+                    x_n, y_n = grid.next()
+                    compiler.add_not_gate(x_n, y_n, out_gt, gw(req_le))
 
             elif c_type in ["$reduce_bool", "$reduce_or", "$reduce_and"]:
                 a_wire = res(conns.get("A", []))
@@ -1306,7 +1458,7 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
                 # 3. A is True AND B is True
                 compiler.add_logic_gate(
                     gate_type=gate_type,
-                    x=x, y=y - (Y_SPACING // 2),
+                    x=x, y=y,
                     in_a=a_is_true,
                     in_b=b_is_true,
                     out=y_wire
