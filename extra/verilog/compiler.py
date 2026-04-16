@@ -555,93 +555,73 @@ class CircuitBuilder:
 
                         props["Label"] = label_map[old_label]
 
-    def optimize_tunnel_clusters(self, max_cluster_size=17):
+    def optimize_tunnel_clusters(self, max_fanout=8):
         """
-        Finds Tunnels with massive fan-out, breaks them into clusters of 16,
-        and physically spawns face-to-face bridging tunnels to keep them electrically connected.
+        Builds a Fractal Tree of Tunnels to strictly cap fanout.
+        No label will EVER appear more than `max_fanout` + 1 times.
+        This drops the O(N^2) CircuitSim lag to near absolute zero.
         """
-        # 4 was too small
-        # 7 was too small
-        # 10 was also too small? 
-
-        # For the labels
         hex_counter = 0
 
+        def get_label(prefix):
+            nonlocal hex_counter
+            lbl = f"{prefix}_{hex_counter:04X}"
+            hex_counter += 1
+            return lbl
+
         for circ_name, circ_data in self.circuits.items():
-            # 1. Tally up all tunnel labels in this circuit
-            tunnel_counts = Counter()
-            for comp in circ_data["components"]:
-                if "Tunnel" in comp["name"]:
-                    lbl = comp.get("properties", {}).get("Label", "")
-                    if lbl:
-                        tunnel_counts[lbl] += 1
+            # 1. Collect all Tunnel components
+            tunnel_comps = [c for c in circ_data["components"] if "Tunnel" in c["name"]]
 
-            # 2. Identify which labels need to be clustered
-            labels_to_split = {lbl: count for lbl, count in tunnel_counts.items() if count > max_cluster_size}
+            # Group by current label
+            label_groups = {}
+            for c in tunnel_comps:
+                lbl = c.get("properties", {}).get("Label", "")
+                if lbl:
+                    label_groups.setdefault(lbl, []).append(c)
 
-            if not labels_to_split:
-                continue
-
-            # We need a safe place to drop the bridging hardware on the grid
+            # Drop location for the bridge tree (far right of canvas)
             bridge_x = 200 
             bridge_y = 50
 
-            # 3. Process each massive label
-            for original_label, total_count in labels_to_split.items():
-                master_label = f"{original_label}_MST"
+            # 2. Process each massive label
+            for original_label, comps in label_groups.items():
+                if len(comps) <= max_fanout:
+                    continue
 
-                # Grab the orignal bitsize for this specific network before renaming
-                bitsize = 1
-                for comp in circ_data["components"]:
-                    if "Tunnel" in comp["name"] and comp.get("properties", {}).get("Label") == original_label:
-                        bitsize = int(comp.get("properties", {}).get("Bitsize", "1"))
-                        break
+                bitsize = int(comps[0].get("properties", {}).get("Bitsize", "1"))
+                prefix = "C" if ("CLK" in original_label.upper() or "CLOCK" in original_label.upper()) else "B"
 
+                # Layer 0: Assign unique labels to the actual components in the circuit
+                current_level_labels = []
+                for i, c in enumerate(comps):
+                    chunk_idx = i // max_fanout
+                    if chunk_idx == len(current_level_labels):
+                        current_level_labels.append(get_label(prefix))
 
-                # Prevent cross-network short circuits by including the original label
-                is_clk = "CLK" in original_label.upper() or "CLOCK" in original_label.upper()
-                prefix = "K" if is_clk else "B"
+                    c["properties"]["Label"] = current_level_labels[-1]
 
-                master_label = f"M_{hex_counter:04X}"
-                hex_counter += 1
-
-                first_seen = False
-                current_cluster_label = None
-                cluster_occupancy = 0
-                cluster_labels_created = []
-
-
-                # 4. Sweep and Rename
-                for comp in circ_data["components"]:
-                    if "Tunnel" in comp["name"] and comp.get("properties", {}).get("Label") == original_label:
-                        if not first_seen:
-                            # The first one becomes the Master
-                            comp["properties"]["Label"] = master_label
-                            first_seen = True
-                        else:
-                            if cluster_occupancy == 0:
-                                current_cluster_label = f"{prefix}_{hex_counter:04X}"
-                                hex_counter += 1
-                                cluster_labels_created.append(current_cluster_label)
-
-                            comp["properties"]["Label"] = current_cluster_label
-                            cluster_occupancy += 1
-
-                            if cluster_occupancy >= max_cluster_size:
-                                cluster_occupancy = 0
-
+                # Layer 1 to N: Build the tree upwards until only 1 root label remains
                 self.set_active_circuit(circ_name)
 
-                for c_label in cluster_labels_created:
-                    # Master Input Tunnel (Port is on the Right)
-                    self.add_tunnel(bridge_x, bridge_y, "EAST", Wire(master_label, bitsize))
+                while len(current_level_labels) > 1:
+                    next_level_labels = []
 
-                    # Cluster Output Tunnel (Port is on the Left)
-                    # Spaced exactly 6 units away so the ports overlap and connect natively!
-                    self.add_tunnel(bridge_x + 6, bridge_y, "WEST", Wire(c_label, bitsize))
+                    for i, child_lbl in enumerate(current_level_labels):
+                        parent_chunk_idx = i // max_fanout
 
-                    bridge_y += 5 # Move down for the next bridge
+                        # Generate a new parent label if we are starting a new chunk
+                        if parent_chunk_idx == len(next_level_labels):
+                            next_level_labels.append(get_label(prefix))
 
+                        parent_lbl = next_level_labels[-1]
+
+                        # Build the face-to-face bridge (Parent <-connects to-> Child)
+                        self.add_tunnel(bridge_x, bridge_y, "EAST", Wire(parent_lbl, bitsize))
+                        self.add_tunnel(bridge_x + 6, bridge_y, "WEST", Wire(child_lbl, bitsize))
+                        bridge_y += 5
+
+                    current_level_labels = next_level_labels
 
     def save(self, filename: str, debug_labels: bool = False):
         # Temporarily Disable for debugging
