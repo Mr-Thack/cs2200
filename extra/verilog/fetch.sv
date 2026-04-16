@@ -19,7 +19,7 @@ assign ext_imm = {{12{IR.imm[19]}}, IR.imm};
 
 always_comb begin
     fbuf.instruction = IR;
-    fbuf.pc_plus_1 = PC + 1;
+    fbuf.pc_plus_1 = PC + 32'd1;
 
     predict_taken = '0;
     predict_target = 'X;
@@ -30,7 +30,7 @@ always_comb begin
             predict_target = rdata.target; 
         end else begin
             if ($signed(ext_imm) < 0) begin 
-                predict_taken = '1;
+                predict_taken = 1'b1;
                 // The ISA treats branch offset as starting from PC + 1
                 predict_target = $signed(fbuf.pc_plus_1 + $signed(ext_imm));
             end
@@ -39,7 +39,7 @@ always_comb begin
 
     fbuf.predicted_taken = predict_taken;
     fbuf.btb_hit = rdata.valid;
-    fbuf.valid = '1;
+    fbuf.valid = 1'b1;
 end
 
 endmodule

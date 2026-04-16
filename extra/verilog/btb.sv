@@ -91,7 +91,7 @@ end
 logic [7:0] write_decode;
 // Forcing this into a MUX instead of a bunch of MUX's and Splitter's
 // [SIZE]
-assign write_decode = (wdata.write && wdata.pc != '0) ? (8'd1 << up_idx) : '0;
+assign write_decode = wdata.write ? (8'd1 << up_idx) : '0;
 
 genvar i;
 generate
@@ -100,7 +100,7 @@ for (i = 0; i < 8; i++) begin : BTB_REGS
     always_ff @(posedge clk) begin
         if (rst) begin
             // Only clear the valid bit to save routing overhead on reset
-            btb_array[i].valid <= '0;
+            btb_array[i]  <= '0;
         end else if (write_decode[i]) begin
             // Single, clean assignment
             btb_array[i] <= next_entry;

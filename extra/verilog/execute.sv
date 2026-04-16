@@ -67,7 +67,7 @@ always_comb begin
     ebuf.valid = dbuf.valid;
 
     if (dbuf.logop == LOGIC_JMP_OFFSET) begin
-        wdata.pc = dbuf.pc_plus_1 - 1;
+        wdata.pc = dbuf.pc_plus_1 - 32'd1;
         wdata.target = $signed(dbuf.pc_plus_1 + $signed(dbuf.offset));
         wdata.taken = cmp_result;
         wdata.write = '1;

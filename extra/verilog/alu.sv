@@ -6,10 +6,10 @@ module alu(
 );
     always_comb begin 
         unique case(op)
-            ALU_ADD: out = $signed($signed(a) + $signed(b));
-            ALU_SUB: out = $signed($signed(a) - $signed(b));
+            ALU_ADD: out = a + b;
+            ALU_SUB: out = a - b;
             ALU_NAND: out = ~(a & b);
-            ALU_ADD1: out = a + 1;
+            ALU_ADD1: out = a + 32'd1;
             ALU_PASSA: out = a;
             ALU_PASSB: out = b; 
             ALU_IGNORE: out = 'X;

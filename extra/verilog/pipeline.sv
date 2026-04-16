@@ -61,7 +61,7 @@ always_ff @(posedge clk) begin
 
         // 3. Step Forward Normally
         end else begin
-            PC <= PC + 1;
+            PC <= PC + 32'd1;
         end
 
     end
@@ -114,32 +114,32 @@ always_ff @(posedge clk) begin
         // -----------------------------------------
         // GLOBAL PIPELINE HEALTH
         // -----------------------------------------
-        if (!halt_now) stat_cycles <= stat_cycles + 1;
-        if (stall_now) stat_stalls <= stat_stalls + 1;
-        if (branch_taken) stat_flushes <= stat_flushes + 1;
+        if (!halt_now) stat_cycles <= stat_cycles + 32'd1;
+        if (stall_now) stat_stalls <= stat_stalls + 32'd1;
+        if (branch_taken) stat_flushes <= stat_flushes + 32'd1;
         if (mbuf_out.valid) begin
             // Count instructions that successfully make it out of the pipeline
-            stat_inst_retired <= stat_inst_retired + 1;
+            stat_inst_retired <= stat_inst_retired + 32'd1;
         end
 
         // -----------------------------------------
         // CONDITIONAL BRANCHES (BEQ, BGT)
         // -----------------------------------------
         if (dbuf_out.logop == LOGIC_JMP_OFFSET) begin
-            stat_branches_seen <= stat_branches_seen + 1;
+            stat_branches_seen <= stat_branches_seen + 32'd1;
 
             // Track BTB hit rate
             if (dbuf_out.btb_hit) begin
-                stat_btb_hits <= stat_btb_hits + 1;
+                stat_btb_hits <= stat_btb_hits + 32'd1;
             end else begin
-                stat_btb_misses <= stat_btb_misses + 1;
+                stat_btb_misses <= stat_btb_misses + 32'd1;
             end
 
             // Track Prediction Accuracy
             if (branch_taken) begin
-                stat_branches_incorrect <= stat_branches_incorrect + 1;
+                stat_branches_incorrect <= stat_branches_incorrect + 32'd1;
             end else begin
-                stat_branches_correct <= stat_branches_correct + 1;
+                stat_branches_correct <= stat_branches_correct + 32'd1;
             end
         end
 
@@ -147,13 +147,13 @@ always_ff @(posedge clk) begin
         // INDIRECT JUMPS (JALR)
         // -----------------------------------------
         if (dbuf_out.logop == LOGIC_JMP_RES) begin
-            stat_jalr_seen <= stat_jalr_seen + 1;
+            stat_jalr_seen <= stat_jalr_seen + 32'd1;
 
             // Once RAS is implemented, this will track how well it works
             if (branch_taken) begin
-                stat_jalr_incorrect <= stat_jalr_incorrect + 1;
+                stat_jalr_incorrect <= stat_jalr_incorrect + 32'd1;
             end else begin
-                stat_jalr_correct <= stat_jalr_correct + 1;
+                stat_jalr_correct <= stat_jalr_correct + 32'd1;
             end
         end
 
