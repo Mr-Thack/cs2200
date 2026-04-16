@@ -10,7 +10,7 @@ module cs_probe #(parameter WIDTH = 1) (input logic [WIDTH-1:0] val);
 endmodule
 
 // --- TOP LEVEL FOR AUTOGRADER ---
-
+(* keep_hierarchy = "true" *)
 module Datapath();
 
 logic clk;

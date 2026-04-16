@@ -11,16 +11,22 @@ typedef enum logic [1:0] {
 } reg_sel_t;
 
 typedef struct packed {
+    // 8 bits
     reg_sel_t       dr_sel;
     reg_sel_t       sr1_sel;
     reg_sel_t       sr2_sel;
 
+    // 6 bits
     alu_source      src1;
     alu_source      src2;
+
+    // 8 bits
     alu_operation   aluop;
     cmp_operation   cmpop;
     mem_operation   memop;
     logic_operation logop;
+
+    // 1 bit
     logic           sig_halt;
 } control_word_t;
 

@@ -176,8 +176,8 @@ localparam MEM_SIZE = 65536;
 
 // Load from Init ROM
 initial begin
-    $readmemh("../pow.hex", IMEM);
-    $readmemh("../pow.hex", DMEM);
+    $readmemh("../fib.hex", IMEM);
+    $readmemh("../fib.hex", DMEM);
 end
 
 btb_read_data btb_rdata;

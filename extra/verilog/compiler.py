@@ -555,6 +555,94 @@ class CircuitBuilder:
 
                         props["Label"] = label_map[old_label]
 
+    def optimize_tunnel_clusters(self, max_cluster_size=17):
+        """
+        Finds Tunnels with massive fan-out, breaks them into clusters of 16,
+        and physically spawns face-to-face bridging tunnels to keep them electrically connected.
+        """
+        # 4 was too small
+        # 7 was too small
+        # 10 was also too small? 
+
+        # For the labels
+        hex_counter = 0
+
+        for circ_name, circ_data in self.circuits.items():
+            # 1. Tally up all tunnel labels in this circuit
+            tunnel_counts = Counter()
+            for comp in circ_data["components"]:
+                if "Tunnel" in comp["name"]:
+                    lbl = comp.get("properties", {}).get("Label", "")
+                    if lbl:
+                        tunnel_counts[lbl] += 1
+
+            # 2. Identify which labels need to be clustered
+            labels_to_split = {lbl: count for lbl, count in tunnel_counts.items() if count > max_cluster_size}
+
+            if not labels_to_split:
+                continue
+
+            # We need a safe place to drop the bridging hardware on the grid
+            bridge_x = 200 
+            bridge_y = 50
+
+            # 3. Process each massive label
+            for original_label, total_count in labels_to_split.items():
+                master_label = f"{original_label}_MST"
+
+                # Grab the orignal bitsize for this specific network before renaming
+                bitsize = 1
+                for comp in circ_data["components"]:
+                    if "Tunnel" in comp["name"] and comp.get("properties", {}).get("Label") == original_label:
+                        bitsize = int(comp.get("properties", {}).get("Bitsize", "1"))
+                        break
+
+
+                # Prevent cross-network short circuits by including the original label
+                is_clk = "CLK" in original_label.upper() or "CLOCK" in original_label.upper()
+                prefix = "K" if is_clk else "B"
+
+                master_label = f"M_{hex_counter:04X}"
+                hex_counter += 1
+
+                first_seen = False
+                current_cluster_label = None
+                cluster_occupancy = 0
+                cluster_labels_created = []
+
+
+                # 4. Sweep and Rename
+                for comp in circ_data["components"]:
+                    if "Tunnel" in comp["name"] and comp.get("properties", {}).get("Label") == original_label:
+                        if not first_seen:
+                            # The first one becomes the Master
+                            comp["properties"]["Label"] = master_label
+                            first_seen = True
+                        else:
+                            if cluster_occupancy == 0:
+                                current_cluster_label = f"{prefix}_{hex_counter:04X}"
+                                hex_counter += 1
+                                cluster_labels_created.append(current_cluster_label)
+
+                            comp["properties"]["Label"] = current_cluster_label
+                            cluster_occupancy += 1
+
+                            if cluster_occupancy >= max_cluster_size:
+                                cluster_occupancy = 0
+
+                self.set_active_circuit(circ_name)
+
+                for c_label in cluster_labels_created:
+                    # Master Input Tunnel (Port is on the Right)
+                    self.add_tunnel(bridge_x, bridge_y, "EAST", Wire(master_label, bitsize))
+
+                    # Cluster Output Tunnel (Port is on the Left)
+                    # Spaced exactly 6 units away so the ports overlap and connect natively!
+                    self.add_tunnel(bridge_x + 6, bridge_y, "WEST", Wire(c_label, bitsize))
+
+                    bridge_y += 5 # Move down for the next bridge
+
+
     def save(self, filename: str, debug_labels: bool = False):
         # Temporarily Disable for debugging
         if not debug_labels:
@@ -587,22 +675,30 @@ class CircuitBuilder:
         total_components = sum(len(c["components"]) for c in self.circuits.values())
         print(f"[*] Success: Compiled {total_components} components across {len(self.circuits)} circuits to {filename}")
 
+
     def print_stats(self):
         print("\n" + "="*50)
         print(" 📊 CIRCUIT SIM COMPONENT STATS BREAKDOWN ")
         print("="*50)
 
         global_counter = Counter()
+        tunnel_counter = Counter() # Track tunnel labels globally
+
         for circ_name, data in self.circuits.items():
             circ_counter = Counter()
             for comp in data["components"]:
-                # Clean up the long Java class names (e.g., com.ra4king...MultiplexerPeer -> Multiplexer)
+                # Clean up the long Java class names
                 short_name = comp["name"].split('.')[-1].replace('Peer', '').replace('Gate', ' Gate')
                 circ_counter[short_name] += 1
                 global_counter[short_name] += 1
 
+                # If it's a Tunnel, tally up its label
+                if short_name == "Tunnel":
+                    label = comp.get("properties", {}).get("Label", "")
+                    if label:
+                        tunnel_counter[label] += 1
+
             print(f"\n--- Module: {circ_name} ---")
-            # Print sorted by most common first
             for name, count in circ_counter.most_common():
                 print(f"  {name:<15}: {count}")
 
@@ -611,7 +707,16 @@ class CircuitBuilder:
         print("-"*50)
         for name, count in global_counter.most_common():
             print(f"  {name:<15}: {count}")
+
+        print("\n" + "-"*50)
+        print(" 🕳️ TOP 10 MOST COMMON TUNNELS ")
+        print("-"*50)
+        # Print the worst offenders
+        for label, count in tunnel_counter.most_common(10):
+            print(f"  {label:<35}: {count}")
         print("="*50 + "\n")
+
+
 
 # ==========================================
 # TRANSLATION / COMPILATION LAYER 
@@ -1901,8 +2006,11 @@ if __name__ == "__main__":
     # 1. Parse the Silicon Netlist into the Compiler Memory
     parse_yosys_netlist(compiler, "build/netlist.json")
 
-    # 2. Stats!
+    # 2. Optimize (Split) Tunnels
+    compiler.optimize_tunnel_clusters()
+
+    # 3. Stats!
     compiler.print_stats()
 
-    # 3. Forge the Signature and Save!
+    # 4. Forge the Signature and Save!
     compiler.save("build/cpu.sim", debug_labels=False)
