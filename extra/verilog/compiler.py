@@ -26,7 +26,7 @@ class CircuitBuilder:
     def __init__(self, version="1.11.2-CE"):
         self.version = version
         self.global_bit_size = 1
-        self.clock_speed = 1
+        self.clock_speed = 16384
 
         self.circuits = {}
 
@@ -1533,15 +1533,19 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
 
             elif c_type == "$logic_not":
                 a_wire = res(conns.get("A", []))
-                zero_bus = res(['0'] * a_wire.bitsize)
+                y_wire = res(conns.get("Y", []))
 
                 # Logical NOT: Is A exactly equal to 0?
-                compiler.add_comparator(
-                    x=x, y=y,
-                    in_a=a_wire,
-                    in_b=zero_bus,
-                    out_eq=gw(conns.get("Y", []))
-                )
+                if a_wire.bitsize == 1:
+                    compiler.add_not_gate(x=x, y=y, in_a=a_wire, out=y_wire)
+                else:
+                    zero_bus = res(['0'] * a_wire.bitsize)
+                    compiler.add_comparator(
+                        x=x, y=y,
+                        in_a=a_wire,
+                        in_b=zero_bus,
+                        out_eq=y_wire
+                    )
 
             elif c_type in ["$logic_and", "$logic_or"]:
                 a_wire = res(conns.get("A", []))
@@ -1550,35 +1554,43 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
                 
                 gate_type = "And" if c_type == "$logic_and" else "Or"
 
-                # Intermediate wires
-                a_is_true = Wire(f"L_{gate_type.upper()}_A_GT0_{x}_{y}", 1)
-                b_is_true = Wire(f"L_{gate_type.upper()}_B_GT0_{x}_{y}", 1)
+                if a_wire.bitsize == 1:
+                    a_is_true = a_wire
+                else:
+                    a_is_true = Wire(f"L_{gate_type.upper()}_A_GT0_{x}_{y}", 1)
 
-                zero_bus = res(['0'] * a_wire.bitsize)
+                    zero_bus = res(['0'] * a_wire.bitsize)
 
-                # 1. Compare A > 0 (Unsigned)
-                compiler.add_comparator(
-                    x=x, y=y,
-                    in_a=a_wire,
-                    in_b=zero_bus,
-                    out_greater=a_is_true,
-                    is_unsigned=True
-                )
+                    # 1. Compare A > 0 (Unsigned)
+                    compiler.add_comparator(
+                        x=x, y=y,
+                        in_a=a_wire,
+                        in_b=zero_bus,
+                        out_greater=a_is_true,
+                        is_unsigned=True
+                    )
 
-                zero_bus = res(['0'] * b_wire.bitsize)
-                
-                x, y = grid.next()
-                
-                # 2. Compare B > 0 (Unsigned)
-                compiler.add_comparator(
-                    x=x, y=y,
-                    in_a=b_wire,
-                    in_b=zero_bus,
-                    out_greater=b_is_true,
-                    is_unsigned=True
-                )
+                    x, y = grid.next()
 
-                x,y = grid.next()
+                if b_wire.bitsize == 1:
+                    b_is_true = b_wire
+                else:
+                    b_is_true = Wire(f"L_{gate_type.upper()}_B_GT0_{x}_{y}", 1)
+                    
+                    zero_bus = res(['0'] * b_wire.bitsize)
+                    
+                    x, y = grid.next()
+                    
+                    # 2. Compare B > 0 (Unsigned)
+                    compiler.add_comparator(
+                        x=x, y=y,
+                        in_a=b_wire,
+                        in_b=zero_bus,
+                        out_greater=b_is_true,
+                        is_unsigned=True
+                    )
+
+                    x,y = grid.next()
 
                 # 3. A is True AND B is True
                 compiler.add_logic_gate(
