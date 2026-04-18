@@ -1,79 +1,74 @@
+// dprf.sv
 module dprf(
-    input logic clk,
-    input logic rst,
-    input logic we,
-    input logic [3:0] regno_read1,
-    input logic [3:0] regno_read2,
-    input logic [3:0] regno_write,
-    input logic [31:0] write_data,
+    input  logic clk,
+    input  logic rst,
+    input  logic we,
+    input  logic [3:0]  regno_read1,
+    input  logic [3:0]  regno_read2,
+    input  logic [3:0]  regno_write,
+    input  logic [31:0] write_data,
     output logic [31:0] read_data1,
     output logic [31:0] read_data2
 );
-    // I HATE this.
-    // It's soooooo unclean...
-    // But it seems to be the only way to force Yosys into generating discrete
-    // registers instead of attempting to build a RAM block for some reason
 
-    // 1. Declare the explicit, beautifully named discrete registers
-    (* keep = "true", preserve = "true" *) logic [31:0] zero; // We need to keep this a real register for the autograder
-    logic [31:0] at, v0, a0, a1, a2, t0, t1, t2, s0, s1, s2, k0, sp, fp, ra;
-
-    // 2. The Clocked Logic: A case statement driving discrete signals.
-    // There is no array here, so Yosys CANNOT infer RAM!
-    always_ff @(posedge clk) begin
-        // Again, just keep zero alive as a register for Autograder
-        if (we) begin
-            case (regno_write)
-                4'd0:  zero <= 32'd0;
-                4'd1:  at <= write_data;
-                4'd2:  v0 <= write_data;
-                4'd3:  a0 <= write_data;
-                4'd4:  a1 <= write_data;
-                4'd5:  a2 <= write_data;
-                4'd6:  t0 <= write_data;
-                4'd7:  t1 <= write_data;
-                4'd8:  t2 <= write_data;
-                4'd9:  s0 <= write_data;
-                4'd10: s1 <= write_data;
-                4'd11: s2 <= write_data;
-                4'd12: k0 <= write_data;
-                4'd13: sp <= write_data;
-                4'd14: fp <= write_data;
-                4'd15: ra <= write_data;
-                default: ; // zero is hardwired, catch-all for safety
-            endcase
-        end
+// --- Write Enable Decoder ---
+logic [15:0] we_dec;
+always_comb begin
+    we_dec = 16'd0;
+    if (we) begin
+        // Explicit left shift since Yosys will go spawn a $shift component
+        // That uses signed shift selection but CircuitSim only supports
+        // Unsigned and I don't feel like messing with the compiler anymore
+        we_dec = 1'b1 << regno_write;
     end
+end
 
-    // 3. Bundle them back into an array PURELY for easy reading
-    // Because this array is driven by continuous assignments, it becomes 
-    // a giant combinational multiplexer, not memory.
-    logic [31:0] registers [16];
-    assign registers[0]  = zero;
-    assign registers[1]  = at;
-    assign registers[2]  = v0;
-    assign registers[3]  = a0;
-    assign registers[4]  = a1;
-    assign registers[5]  = a2;
-    assign registers[6]  = t0;
-    assign registers[7]  = t1;
-    assign registers[8]  = t2;
-    assign registers[9]  = s0;
-    assign registers[10] = s1;
-    assign registers[11] = s2;
-    assign registers[12] = k0;
-    assign registers[13] = sp;
-    assign registers[14] = fp;
-    assign registers[15] = ra;
+// --- Register Output Wires ---
+logic [31:0] reg_out_0, reg_out_1, reg_out_2, reg_out_3;
+logic [31:0] reg_out_4, reg_out_5, reg_out_6, reg_out_7;
+logic [31:0] reg_out_8, reg_out_9, reg_out_10, reg_out_11;
+logic [31:0] reg_out_12, reg_out_13, reg_out_14, reg_out_15;
 
-    // Read Port 1 (Bypass logic remains intact)
-    assign read_data1 = (regno_read1 == 4'd0) ? 32'd0 :
-        (we && (regno_write == regno_read1)) ? write_data :
-        registers[regno_read1];
+// --- Explicit Blackbox Register Instances ---
+// $zero gets a hardwired 0 enable. Yosys cannot optimize this away!
+cs_register reg_zero (.clk(1'b0), .clr(rst), .en(1'b0),       .d(write_data), .q(reg_out_0));
+cs_register reg_at   (.clk(clk), .clr(rst), .en(we_dec[1]),  .d(write_data), .q(reg_out_1));
+cs_register reg_v0   (.clk(clk), .clr(rst), .en(we_dec[2]),  .d(write_data), .q(reg_out_2));
+cs_register reg_a0   (.clk(clk), .clr(rst), .en(we_dec[3]),  .d(write_data), .q(reg_out_3));
+cs_register reg_a1   (.clk(clk), .clr(rst), .en(we_dec[4]),  .d(write_data), .q(reg_out_4));
+cs_register reg_a2   (.clk(clk), .clr(rst), .en(we_dec[5]),  .d(write_data), .q(reg_out_5));
+cs_register reg_t0   (.clk(clk), .clr(rst), .en(we_dec[6]),  .d(write_data), .q(reg_out_6));
+cs_register reg_t1   (.clk(clk), .clr(rst), .en(we_dec[7]),  .d(write_data), .q(reg_out_7));
+cs_register reg_t2   (.clk(clk), .clr(rst), .en(we_dec[8]),  .d(write_data), .q(reg_out_8));
+cs_register reg_s0   (.clk(clk), .clr(rst), .en(we_dec[9]),  .d(write_data), .q(reg_out_9));
+cs_register reg_s1   (.clk(clk), .clr(rst), .en(we_dec[10]), .d(write_data), .q(reg_out_10));
+cs_register reg_s2   (.clk(clk), .clr(rst), .en(we_dec[11]), .d(write_data), .q(reg_out_11));
+cs_register reg_k0   (.clk(clk), .clr(rst), .en(we_dec[12]), .d(write_data), .q(reg_out_12));
+cs_register reg_sp   (.clk(clk), .clr(rst), .en(we_dec[13]), .d(write_data), .q(reg_out_13));
+cs_register reg_fp   (.clk(clk), .clr(rst), .en(we_dec[14]), .d(write_data), .q(reg_out_14));
+cs_register reg_ra   (.clk(clk), .clr(rst), .en(we_dec[15]), .d(write_data), .q(reg_out_15));
 
-    // Read Port 2 (Bypass logic remains intact)
-    assign read_data2 = (regno_read2 == 4'd0) ? 32'd0 :
-        (we && (regno_write == regno_read2)) ? write_data :
-        registers[regno_read2];
+// --- Explicit Blackbox Muxes ---
+logic [31:0] raw_read1, raw_read2;
+
+cs_mux_16to1 read1_mux (
+    .d0(reg_out_0),   .d1(reg_out_1),   .d2(reg_out_2),   .d3(reg_out_3),
+    .d4(reg_out_4),   .d5(reg_out_5),   .d6(reg_out_6),   .d7(reg_out_7),
+    .d8(reg_out_8),   .d9(reg_out_9),   .d10(reg_out_10), .d11(reg_out_11),
+    .d12(reg_out_12), .d13(reg_out_13), .d14(reg_out_14), .d15(reg_out_15),
+    .sel(regno_read1), .y(raw_read1)
+);
+
+cs_mux_16to1 read2_mux (
+    .d0(reg_out_0),   .d1(reg_out_1),   .d2(reg_out_2),   .d3(reg_out_3),
+    .d4(reg_out_4),   .d5(reg_out_5),   .d6(reg_out_6),  .d7(reg_out_7),
+    .d8(reg_out_8),   .d9(reg_out_9),   .d10(reg_out_10), .d11(reg_out_11),
+    .d12(reg_out_12), .d13(reg_out_13), .d14(reg_out_14), .d15(reg_out_15),
+    .sel(regno_read2), .y(raw_read2)
+);
+
+// --- Bypass Routing ---
+assign read_data1 = (we && (regno_write == regno_read1) && (regno_read1 != 4'd0)) ? write_data : raw_read1;
+assign read_data2 = (we && (regno_write == regno_read2) && (regno_read2 != 4'd0)) ? write_data : raw_read2;
 
 endmodule

@@ -16,15 +16,6 @@ module test;
         $dumpfile("build/waves.vcd"); 
         $dumpvars(0, test);
 
-        // By default, the registers are not dumped on a wire
-        // And the testing software only dumps the outputs of wires onto the
-        // waves file, I guess because we could have like infinite registers,
-        // which would overload our stuff.
-        // So... we have to manually dump the things we want
-        for (int i = 0; i < 16; i++) begin
-            $dumpvars(0, dut.registers.registers[i]);
-        end
-
         // Reset everything for 3 clock cycles
         clk = 1'b0;
         rst = 1'b1;

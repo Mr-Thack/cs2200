@@ -17,29 +17,26 @@ logic clk;
 logic rst;
 
 // 1. Generate the Clock Peer
-cs_clock clock_gen (
+(* keep *) cs_clock clock_gen (
     .clk(clk)
 );
 
 // 2. Hardcode Reset to 0
 assign rst = 1'b0;
 
-logic [31:0] debug_pc;
-logic halt;
-logic [31:0] cycles;
+// (* keep *) logic [31:0] debug_pc;
+// (* keep *) logic halt;
+// (* keep *) logic [31:0] cycles;
 
 // 3. Instantiate CPU
-pipeline dut (
+(* keep *) pipeline dut (
     .clk(clk),
-    .rst(rst),
-    .debug_pc(debug_pc),
-    .halt_flag(halt),
-    .out_stat_cycles(cycles)
+    .rst(rst)
 );
 
 // 4. Drop probes to prevent Yosys from optimizing the pipeline away
-cs_probe #(.WIDTH(32)) probe_pc (.val(debug_pc));
-cs_probe #(.WIDTH(1)) probe_halt (.val(halt));
-cs_probe #(.WIDTH(32)) probe_cycles (.val(cycles));
+// (* keep *) cs_probe #(.WIDTH(32)) probe_pc (.val(debug_pc));
+// (* keep *) cs_probe #(.WIDTH(1)) probe_halt (.val(halt));
+// (* keep *) cs_probe #(.WIDTH(32)) probe_cycles (.val(cycles));
 
 endmodule

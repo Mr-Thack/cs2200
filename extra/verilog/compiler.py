@@ -6,6 +6,8 @@ from dataclasses import dataclass
 from typing import Optional, List
 import math
 from collections import Counter
+import re
+import sys
 
 # ==========================================
 # DATA MODELS
@@ -372,6 +374,20 @@ class CircuitBuilder:
                      in_en: Optional[Wire] = None, in_clk: Optional[Wire] = None,
                      in_clr: Optional[Wire] = None, label: str = "", bitsize: int = None):
         """Standard D-Flip-Flop Register."""
+        
+        REGISTERS = ["zero", "at", "v0", "a0", "a1", "a2", "t0", "t1", "t2", "s0", "s1", "s2", "k0", "sp", "fp", "ra"]
+        if ("reg_" in label):
+            label = label.replace("reg_", "")
+
+        if ("registers[" in label):
+            label = label.replace("registers[", "").replace("]", "")
+            label = REGISTERS[int(label)]
+
+        if (label in REGISTERS): 
+            label = "$" + label
+
+        label = "PC-IF" if (label in ["PC", "fbuf_out_pc_plus_1"]) else label
+
         self._add_raw_component(
             "com.ra4king.circuitsim.gui.peers.memory.RegisterPeer", x, y,
             {
@@ -769,6 +785,8 @@ def build_bit_registry(module_data, netlist) -> dict:
                       "$reduce_or", "$reduce_and", "$reduce_bool",
                       "$shl", "$shr", "$sshl", "$sshr",
                       "$cs_folded_mux"]:
+            output_ports = ["Y"]
+        elif c_type.startswith("cs_mux_"):
             output_ports = ["Y"]
         elif c_type == "$cs_mega_comparator":
             # Dynamically grab all output ports we created (Y_EQ, Y_LT, Y_GE, etc.)
@@ -1318,17 +1336,18 @@ def optimize_mux_chains(netlist: dict) -> dict:
 
     return netlist
 
-def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
+def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str, OPTIMIZE: bool = True):
     """
     The main compilation loop.
     """
     with open(json_file_path, 'r') as f:
         netlist = json.load(f)
 
-    netlist = optimize_constant_muxes(netlist)
-    netlist = optimize_1bit_comparators(netlist)
-    netlist = optimize_mux_chains(netlist)
-    netlist = optimize_comparator_groups(netlist)
+    if OPTIMIZE:
+        netlist = optimize_constant_muxes(netlist)
+        netlist = optimize_1bit_comparators(netlist)
+        netlist = optimize_mux_chains(netlist)
+        netlist = optimize_comparator_groups(netlist)
 
     # with open("pipeline.json", "w") as f:
     #    json.dump(netlist['modules']['pipeline'], f, indent=4)
@@ -1343,9 +1362,11 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
 
     X_MAX = 100
 
+
     for module_name, module_data in netlist.get("modules", {}).items():
         safe_mod_name = module_name.split('\\')[-1].replace('$', '')
-        if safe_mod_name in ['cs_clock', 'cs_probe']:
+        if safe_mod_name.startswith("cs_"):
+            # Don't make this one because it's a CircuitSim specific override that we've defined below
             continue
 
         # Determine if this is the top level module (Fallback to Main)
@@ -1404,17 +1425,6 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
         current_y = Y_INIT
 
 
-        if safe_mod_name == "dprf":
-            x,y = grid.next()
-            compiler.add_register(
-                x=x, y=y,
-                in_d=None,
-                out_q=None,
-                label="$zero",
-                bitsize=32
-            )
-
-
         cells = module_data.get("cells", {})
 
         for cell_name, cell_data in cells.items():
@@ -1428,7 +1438,6 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
             clean_label = cell_name.lstrip('\\')
             # print("Original Label Name:", cell_name)
 
-            # --- ARITHMETIC ---
             if c_type == "cs_clock":
                 out_wire = gw(conns.get("clk", []))
                 compiler.add_clock(x=x, y=y, out_wire=out_wire)
@@ -1437,6 +1446,69 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
                 in_wire = res(conns.get("val", []))
                 compiler.add_pin(x=x, y=y, wire=in_wire, pin_label=clean_label, is_input=False)
                 continue
+            elif c_type == "cs_register":
+                # Yosys will preserve exactly these ports: 'clk', 'clr', 'en', 'd', 'q'
+                in_clk = res(conns.get("clk", []))
+                in_clr = res(conns.get("clr", []))
+                in_en  = res(conns.get("en", []))
+                in_d   = res(conns.get("d", []))
+                out_q  = gw(conns.get("q", []))
+
+                compiler.add_register(
+                    x=x, y=y,
+                    in_d=in_d,
+                    out_q=out_q,
+                    in_clk=in_clk,
+                    in_en=in_en,
+                    in_clr=in_clr,
+                    label=cell_name
+                )
+            
+            # --- CUSTOM DYNAMIC BLACKBOX MULTIPLEXER ---
+            elif c_type.startswith("cs_mux_"):
+                match = re.search(r'cs_mux_(\d+)to1', c_type)
+                if match:
+                    num_inputs = int(match.group(1))
+                    sel_bits = max(1, math.ceil(math.log2(num_inputs)))
+
+                    out_wire = gw(conns.get("y", []))
+
+                    # Dynamically fetch d0 through dN-1
+                    in_wires = [res(conns.get(f"d{i}", [])) for i in range(num_inputs)]
+
+                    compiler.add_mux(
+                        x=x, y=y, sel_bits=sel_bits,
+                        in_wires=in_wires,
+                        in_sel=res(conns.get("sel", [])),
+                        out=out_wire
+                    )
+                else:
+                    print(f"\033[31m[!] Invalid Custom Mux format: {c_type}\033[0m")
+
+            # --- FOLDED MULTIPLEXERS ---
+            elif c_type == "$cs_folded_mux":
+                out_wire = gw(conns.get("Y", []))
+                target_width = out_wire.bitsize
+
+                a_flat = conns.get("A", [])
+                s_flat = conns.get("S", [])
+
+                sel_bits = len(s_flat)
+                num_inputs = 2 ** sel_bits
+
+                in_wires = []
+                for i in range(num_inputs):
+                    # Slice the massive flat array back into distinct wire requests
+                    chunk = a_flat[i * target_width : (i + 1) * target_width]
+                    in_wires.append(res(chunk))
+
+                compiler.add_mux(
+                    x=x, y=y, sel_bits=sel_bits,
+                    in_wires=in_wires,
+                    in_sel=res(s_flat),
+                    out=out_wire
+                )
+
             elif not c_type.startswith("$") or c_type.startswith("$paramod$"):
                 sub_name = c_type.split('\\')[-1].replace('$', '')
 
@@ -1579,6 +1651,7 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
                     x=x, y=y,
                     in_a=a_wire, out=out_wire
                 )
+
 
                 # --- COMPARATORS ---
             elif c_type in ("$eq", "$ne", "$gt", "$lt", "$ge", "$le", "$cs_mega_comparator"):
@@ -1730,29 +1803,6 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
                     out=gw(conns.get("Y", []))
                 )
 
-            # --- FOLDED MULTIPLEXERS ---
-            elif c_type == "$cs_folded_mux":
-                out_wire = gw(conns.get("Y", []))
-                target_width = out_wire.bitsize
-
-                a_flat = conns.get("A", [])
-                s_flat = conns.get("S", [])
-
-                sel_bits = len(s_flat)
-                num_inputs = 2 ** sel_bits
-
-                in_wires = []
-                for i in range(num_inputs):
-                    # Slice the massive flat array back into distinct wire requests
-                    chunk = a_flat[i * target_width : (i + 1) * target_width]
-                    in_wires.append(res(chunk))
-
-                compiler.add_mux(
-                    x=x, y=y, sel_bits=sel_bits,
-                    in_wires=in_wires,
-                    in_sel=res(s_flat), # Your resolve function automatically builds the merger splitter!
-                    out=out_wire
-                )
 
             elif c_type == "$pmux":
                 # --- NATIVE PMUX CONVERTER ---
@@ -1970,15 +2020,6 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
                 # print(f"Found final label {final_label}")
 
             
-                REGISTERS = ["zero", "at", "v0", "a0", "a1", "a2", "t0", "t1", "t2", "s0", "s1", "s2", "k0", "sp", "fp", "ra"]
-                if ("registers[" in final_label):
-                    final_label = final_label.replace("registers[", "").replace("]", "")
-                    final_label = REGISTERS[int(final_label)]
-
-                if (final_label in REGISTERS): 
-                    final_label = "$" + final_label
-
-                final_label = "PC-IF" if (final_label in ["PC", "fbuf_out_pc_plus_1"]) else final_label
 
                 compiler.add_register(
                      x=x, y=y,
@@ -1991,6 +2032,7 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
                 )
             else:
                 print(f"\033[31m[!] Unmapped component: {c_type}\033[0m")
+                sys.exit(1)
 
     # ========================================================
     # FINAL STEP: Spawn all Constant values detected by Yosys
@@ -2018,11 +2060,15 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str):
 if __name__ == "__main__":
     compiler = CircuitBuilder()
 
+    OPTIMIZE = True
+    # No cli flag yet...
+
     # 1. Parse the Silicon Netlist into the Compiler Memory
-    parse_yosys_netlist(compiler, "build/netlist.json")
+    parse_yosys_netlist(compiler, "build/netlist.json", OPTIMIZE)
 
     # 2. Optimize (Split) Tunnels
-    compiler.optimize_tunnel_clusters()
+    if OPTIMIZE:
+        compiler.optimize_tunnel_clusters()
 
     # 3. Stats!
     compiler.print_stats()
