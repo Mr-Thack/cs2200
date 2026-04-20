@@ -66,16 +66,33 @@ always_comb begin
     ebuf.data = (dbuf.memop == MEM_WRITE) ? fwd_val1 : log_result;
     ebuf.valid = dbuf.valid;
 
+    // Initialize to 0 because split_wide will split this into multiple
+    // registers
+    wdata.pc = '0;
+    wdata.target = '0;
+    wdata.taken = '0;
+    wdata.write = '0;
+
     if (dbuf.logop == LOGIC_JMP_OFFSET) begin
-        wdata.pc = dbuf.pc_plus_1 - 32'd1;
-        wdata.target = $signed(dbuf.pc_plus_1 + $signed(dbuf.offset));
-        wdata.taken = cmp_result;
-        wdata.write = '1;
-    end else begin
-        wdata.pc = '0;
-        wdata.target = '0;
-        wdata.taken = '0;
-        wdata.write = '0;
+        // Only populate BTB with non-trivial JMPs
+        // since trivial ones are now evaluated in Fetch and Decode
+        if (dbuf.sr1 != dbuf.sr2) begin
+            wdata.pc = dbuf.pc_plus_1 - 32'd1;
+            wdata.target = $signed(dbuf.pc_plus_1 + $signed(dbuf.offset));
+            wdata.taken = cmp_result;
+            wdata.write = '1;
+        end
+    end
+
+    if (dbuf.logop == LOGIC_JMP_RES) begin
+        // Populate BTB for JALR calls (since they could be offsets
+        // and we just don't know
+        if (dbuf.dr != 4'd0) begin
+            wdata.pc = dbuf.pc_plus_1 - 32'd1;
+            wdata.target = alu_val1;
+            wdata.taken = 1'b1;
+            wdata.write = 1'b1;
+        end
     end
 end
 

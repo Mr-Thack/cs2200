@@ -27,3 +27,24 @@ so simplified to a Direct Mapped Cache, but not working fast enough, surprisingl
 But, after imposing a HALT after 3k cycles, I found:
 POW: 1322, FIB: CRASH, TWO_SUM: 2395
 I guess that makes sense since our BTB is too small to be useful.
+
+Fourth Attempt V(I lost count):
+Was using an 8-entry Direct Mapped Cache. Did a lot of optimizations.
+Some of them include:
+1. Constant Comparator and MUX Folding
+2. Finding out the Tunneling algorithm is O(n^2) so manually splitting cables 
+3. Subsequently Optimizing for wire count over gate count
+Finally got it to run:
+POW: 1322, FIB: 6039, TWO_SUM: 2395
+
+Fourth Attempt.2:
+Now using 16-entry Direct Mapped Cache + custom Circuit Sim Circuits.
+POW: 1322, FIB: 6105???, TWO_SUM: 2399
+
+Fifth Attempt:
+Now using 16 entry RAS + LEA Latch + Trivially True BEQ Checker.
+But, sadly, went over CircuitSim limits again...
+
+Fifth Attempt.2:
+More CircuitSim Optimization!!!
+POW: 1255, FIB: 5398, TWO_SUM: 2324

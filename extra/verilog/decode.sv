@@ -35,7 +35,8 @@ module decode(
     input logic clk,
     input logic rst,
 
-    input logic branch_taken,
+    input logic exec_branch_taken,
+    input logic stall_now,
     input logic halt_now,
 
     input fbuf_data fbuf,
@@ -45,7 +46,16 @@ module decode(
 
     output sig_halt,
 
-    output dbuf_data dbuf
+    output dbuf_data dbuf,
+
+    input [31:0] jalr_target_fwd,
+
+    output logic ras_push,
+    output logic [31:0] ras_push_data,
+    output logic ras_recover,
+
+    output logic decode_branch_taken,
+    output logic [31:0] decode_branch_target
 );
 
 
@@ -138,8 +148,8 @@ end
 // Physical Decode Logic
 // -------------------------------------------------------------------------
 instruction_data ins;
-// Create Bubble (NOOP) when branch taken or stalled
-assign ins = (rst || branch_taken || halt_now) ? '0 : fbuf.instruction;
+// Create Bubble (NOOP) when exec branch taken or stalled
+assign ins = (rst || exec_branch_taken || halt_now) ? '0 : fbuf.instruction;
 
 logic [3:0] dr, sr1, sr2; 
 alu_source src1, src2;
@@ -150,6 +160,8 @@ logic_operation logop;
 
 control_word_t cw;
 assign cw = decode_rom[ins.opcode];
+
+assign ras_recover = exec_branch_taken && fbuf.ras_was_popped;
 
 always_comb begin
     // 1. Route the signals directly from the ROM Control Word
@@ -186,6 +198,23 @@ always_comb begin
         REG_RZ:  sr2 = ins.imm.rz;
         default: sr2 = '0;
     endcase
+   
+    ras_push = 1'b0;
+    ras_push_data = fbuf.pc_plus_1;
+    decode_branch_taken = 1'b0;
+    decode_branch_target = 'X;
+    if (logop == LOGIC_JMP_RES) begin
+        if (ins.ry != 4'd0 && !exec_branch_taken && !stall_now) begin
+            ras_push = 1'b1;
+        end
+
+        // Evaluate our prediction
+        if (!fbuf.predicted_taken || jalr_target_fwd != fbuf.predict_target) begin
+            decode_branch_taken = 1'b1;
+            decode_branch_target = jalr_target_fwd;
+        end
+    end
+
 end
 
 // -------------------------------------------------------------------------

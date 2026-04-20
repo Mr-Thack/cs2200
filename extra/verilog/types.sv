@@ -68,7 +68,9 @@ package types;
         logic [31:0] pc_plus_1;
         instruction_data instruction;
         logic predicted_taken;
+        logic [31:0] predict_target;
         logic btb_hit; // This is just for profiling
+        logic ras_was_popped; 
         logic valid; // Also for profiling
     } fbuf_data;
 

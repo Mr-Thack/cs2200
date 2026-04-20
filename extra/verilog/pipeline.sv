@@ -20,9 +20,21 @@ logic halt_now;
 // Stop for a load-use hazard
 logic stall_now;
 logic sig_halt;
+logic load_use_hazard;
+
 
 logic branch_taken;
 logic [31:0] branch_target;
+
+assign branch_taken = exec_branch_taken || decode_branch_taken;
+assign branch_target = exec_branch_taken ? exec_branch_target : decode_branch_target;
+
+logic exec_branch_taken;
+logic [31:0] exec_branch_target;
+
+logic decode_branch_taken;
+logic [31:0] decode_branch_target;
+
 
 logic predict_taken;
 logic [31:0] predict_target;
@@ -124,19 +136,22 @@ always_ff @(posedge clk) begin
 
         // -----------------------------------------
         // CONDITIONAL BRANCHES (BEQ, BGT)
+        // * Evaluated in EXEC, so not fake JMP's
         // -----------------------------------------
         if (dbuf_out.logop == LOGIC_JMP_OFFSET) begin
             stat_branches_seen <= stat_branches_seen + 32'd1;
 
             // Track BTB hit rate
-            if (dbuf_out.btb_hit) begin
-                stat_btb_hits <= stat_btb_hits + 32'd1;
-            end else begin
-                stat_btb_misses <= stat_btb_misses + 32'd1;
+            if (dbuf_out.sr1 != dbuf_out.sr2) begin
+                if (dbuf_out.btb_hit) begin
+                    stat_btb_hits <= stat_btb_hits + 32'd1;
+                end else begin
+                    stat_btb_hits <= stat_btb_misses + 32'd1;
+                end
             end
 
-            // Track Prediction Accuracy
-            if (branch_taken) begin
+            // Track Prediction Accuracy, but use EXEC's branch signal
+            if (exec_branch_taken) begin
                 stat_branches_incorrect <= stat_branches_incorrect + 32'd1;
             end else begin
                 stat_branches_correct <= stat_branches_correct + 32'd1;
@@ -145,12 +160,15 @@ always_ff @(posedge clk) begin
 
         // -----------------------------------------
         // INDIRECT JUMPS (JALR)
+        // * Evaluated in DEC
         // -----------------------------------------
-        if (dbuf_out.logop == LOGIC_JMP_RES) begin
+        if (fbuf_out.valid && fbuf_out.instruction.opcode == OP_JALR
+            && !stall_now && !halt_now && !exec_branch_taken) begin
+
             stat_jalr_seen <= stat_jalr_seen + 32'd1;
 
-            // Once RAS is implemented, this will track how well it works
-            if (branch_taken) begin
+            // Tracking JMP Prediction Accuracy using DEC's branch signal
+            if (decode_branch_taken) begin
                 stat_jalr_incorrect <= stat_jalr_incorrect + 32'd1;
             end else begin
                 stat_jalr_correct <= stat_jalr_correct + 32'd1;
@@ -188,10 +206,29 @@ btb btb0 (
     .clk(clk),
     .rst(rst),
     
-    .read_pc(PC),
+    .read_pc(PC[15:0]),
     .rdata(btb_rdata),
 
     .wdata(btb_wdata)
+);
+
+logic ras_recover;
+logic ras_push;
+logic [31:0] ras_push_data;
+logic ras_pop;
+logic [31:0] ras_pop_data;
+
+ras ras0 (
+    .clk(clk),
+    .rst(rst),
+    
+    .recover(ras_recover),
+
+    .push(ras_push),
+    .push_data(ras_push_data),
+
+    .pop(ras_pop),
+    .pop_data(ras_pop_data)
 );
 
 // *********** //
@@ -208,10 +245,14 @@ fetch ftch(
     .rst(rst),
     .PC(PC),
     .IR(IR),
+    .branch_taken(branch_taken),
+    .stall_now(stall_now),
     .predict_taken(predict_taken),
     .predict_target(predict_target),
     .rdata(btb_rdata),
-    .fbuf(fbuf_in)
+    .fbuf(fbuf_in),
+    .ras_pop(ras_pop),
+    .ras_pop_data(ras_pop_data)
 );
 
 always_ff @(posedge clk) begin
@@ -219,6 +260,74 @@ always_ff @(posedge clk) begin
     // then we can't forward our newly fetched instruction to the Decode Stage
     if (!halt_now && !stall_now) begin
         fbuf_out <= (rst || branch_taken) ? '0 : fbuf_in;
+    end
+end
+
+// ==========================================
+// LEA LATCH (For Decode Stage, but sorta Data Forwarding)
+// ==========================================
+typedef struct packed {
+    logic [15:0] target;
+    logic [3:0]  dr;
+    logic        valid;
+} lea_latch_t;
+
+lea_latch_t lea_latch;
+logic [31:0] current_lea_target;
+
+// Calculate LEA: pc_plus_1 + sign_extended_offset
+assign current_lea_target = fbuf_out.pc_plus_1 + { {12{fbuf_out.instruction.imm[19]}}, fbuf_out.instruction.imm };
+
+always_ff @(posedge clk) begin
+    if (rst || branch_taken) begin
+        lea_latch <= '0;
+    end else if (fbuf_out.instruction.opcode == OP_LEA && !stall_now && !halt_now) begin
+        // Save the freshly decoded LEA
+        lea_latch.target <= current_lea_target[15:0];
+        lea_latch.dr     <= fbuf_out.instruction.rx; 
+        lea_latch.valid  <= 1'b1;
+    end else if (dbuf_in.dr == lea_latch.dr && dbuf_in.dr != 4'd0) begin
+        // Invalidate if some other instruction overwrites this register!
+        lea_latch.valid  <= 1'b0;
+    end
+end
+
+// ==========================================
+// JALR DATA FORWARDING & HAZARD DETECTION
+// ==========================================
+logic [31:0] jalr_target_fwd;
+logic jalr_stall;
+logic [3:0] jalr_reg;
+
+// The register JALR needs is in rx (which becomes sr1 in Decode)
+assign jalr_reg = fbuf_out.instruction.rx;
+
+always_comb begin
+    // Default: read from the physical register file (dout1)
+    jalr_target_fwd = dout1; 
+    jalr_stall = 1'b0;
+
+    if (fbuf_out.instruction.opcode == OP_JALR) begin
+        // 1. Check Writeback Stage (mbuf_out)
+        if ((mbuf_out.dr != 4'd0) && (mbuf_out.dr == jalr_reg)) begin
+            jalr_target_fwd = mbuf_out.data;
+        end
+
+        // 2. Check Memory Stage (ebuf_out)
+        if ((ebuf_out.dr != 4'd0) && (ebuf_out.dr == jalr_reg)) begin
+            jalr_target_fwd = (ebuf_out.memop == MEM_READ) ? dmem_data_line : ebuf_out.data;
+        end
+
+        // 3. Check our Special Early LEA Latch (Freshest data!)
+        if (lea_latch.valid && lea_latch.dr == jalr_reg) begin
+            jalr_target_fwd = 32'(lea_latch.target);
+        end
+
+        // 4. Check Execute Stage Hazard (dbuf_out)
+        // If we didn't get it from the LEA latch, and the ALU is crunching it right now...
+        else if ((dbuf_out.dr != 4'd0) && (dbuf_out.dr == jalr_reg)) begin
+            jalr_stall = 1'b1; // STALL! We must wait 1 cycle for the ALU.
+        end
     end
 end
 
@@ -232,13 +341,20 @@ logic [31:0] dout1, dout2;
 decode dec(
     .clk(clk),
     .rst(rst),
-    .branch_taken(branch_taken),
+    .exec_branch_taken(exec_branch_taken),
+    .stall_now(stall_now),
     .halt_now(halt_now),
     .fbuf(fbuf_out),
     .dout1(dout1),
     .dout2(dout2),
     .sig_halt(sig_halt),
-    .dbuf(dbuf_in)
+    .dbuf(dbuf_in),
+    .jalr_target_fwd(jalr_target_fwd),
+    .ras_push(ras_push),
+    .ras_push_data(ras_push_data),
+    .ras_recover(ras_recover),
+    .decode_branch_taken(decode_branch_taken),
+    .decode_branch_target(decode_branch_target)
 );
 
 // Physically instantiate and read/write registers
@@ -255,15 +371,19 @@ dprf registers(
 );
 
 
-assign stall_now = (dbuf_out.dr != 4'd0) && (dbuf_out.memop == MEM_READ)
+
+
+assign load_use_hazard = (dbuf_out.dr != 4'd0) && (dbuf_out.memop == MEM_READ)
                     && ((dbuf_out.dr == dbuf_in.sr1) || (dbuf_out.dr == dbuf_in.sr2));
+
+assign stall_now = load_use_hazard || jalr_stall;
 
 
 always_ff @(posedge clk) begin
     // Need to check halt_now and dbuf_out.opcode because
     // halt_now is only latched on the clock cycle, so it wouldn't propogate
     // fast enough to prevent the decode stage from forwarding this
-    dbuf_out <= (rst || halt_now || stall_now || sig_halt || branch_taken) ? '0 : dbuf_in;
+    dbuf_out <= (rst || halt_now || stall_now || sig_halt || exec_branch_taken) ? '0 : dbuf_in;
 end
 
 // ************* //
@@ -318,8 +438,8 @@ execute exec(
     .dbuf(dbuf_out),
     .fwd_val1(fwd_val1),
     .fwd_val2(fwd_val2),
-    .branch_taken(branch_taken),
-    .branch_target(branch_target),
+    .branch_taken(exec_branch_taken),
+    .branch_target(exec_branch_target),
     .wdata(btb_wdata),
     .ebuf(ebuf_in)
 );

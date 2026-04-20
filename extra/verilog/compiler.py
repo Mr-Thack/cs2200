@@ -398,14 +398,17 @@ class CircuitBuilder:
         )
         # Left
         self.add_tunnel(x - 6, y + 1, "EAST",  in_d)
-        self.add_tunnel(x - 6, y + 2, "EAST",  in_en)
+        if in_en and in_en.const_val != "1":
+            self.add_tunnel(x - 6, y + 2, "EAST",  in_en)
 
         # Right (Output)
         self.add_tunnel(x + 4, y + 1, "WEST",  out_q)
 
         # Bottom (CLK & CLR)
         self.add_tunnel(x - 2, y + 4, "NORTH", in_clk)
-        self.add_tunnel(x    , y + 4, "NORTH", in_clr)
+
+        if in_clr and in_clr.const_val != "0":
+            self.add_tunnel(x, y + 4, "NORTH", in_clr)
 
     def add_splitter(self, x: int, y: int, in_bus: Wire, out_wires: List[Wire]):
         """
@@ -787,7 +790,9 @@ def build_bit_registry(module_data, netlist) -> dict:
                       "$cs_folded_mux"]:
             output_ports = ["Y"]
         elif c_type.startswith("cs_mux_"):
-            output_ports = ["Y"]
+            output_ports = ["y"]
+        elif c_type == "cs_register":
+            output_ports = ["q"]
         elif c_type == "$cs_mega_comparator":
             # Dynamically grab all output ports we created (Y_EQ, Y_LT, Y_GE, etc.)
             output_ports = [p for p in conns.keys() if p.startswith("Y_")]
@@ -839,106 +844,208 @@ def get_wire(bits_array, current_module_name: str = "Main") -> Wire:
 
     return Wire(unique_id, bitsize)
 
+def build_master_splitters(compiler: CircuitBuilder, grid, module_data: dict, bit_registry: dict, current_module: str):
+    """
+    Pre-pass: Scans the entire module to find every tap on every bus.
+    Creates a single Master Splitter per bus that precisely partitions 
+    it into the required non-overlapping segments.
+    """
+    compiler.parent_segments = {}
+    taps_by_parent = {}
+
+    # 1. Collect all requested bit arrays in the entire module
+    all_reqs = []
+    for port in module_data.get("ports", {}).values():
+        all_reqs.append(port.get("bits", []))
+    for cell in module_data.get("cells", {}).values():
+        for bits in cell.get("connections", {}).values():
+            all_reqs.append(bits)
+
+    # 2. Break requests down into contiguous chunks
+    for raw_bits in all_reqs:
+        if not raw_bits: continue
+
+        # Handle sign extension repeating bits
+        repeats = 0
+        for i in range(len(raw_bits) - 1, 0, -1):
+            if raw_bits[i] == raw_bits[i - 1]: repeats += 1
+            else: break
+        core_bits = raw_bits[:len(raw_bits)-repeats] if repeats > 0 else raw_bits
+
+        chunks = []
+        current_chunk = []
+        current_parent = None
+
+        for b in core_bits:
+            parent = bit_registry.get(b, "CONSTANT") if isinstance(b, int) else "CONSTANT"
+            is_contiguous = False
+            if parent != "CONSTANT" and current_parent == parent and current_chunk:
+                if parent.index(b) == parent.index(current_chunk[-1]) + 1:
+                    is_contiguous = True
+
+            if parent == current_parent and (parent == "CONSTANT" or is_contiguous):
+                current_chunk.append(b)
+            else:
+                if current_chunk: chunks.append((current_parent, current_chunk))
+                current_chunk = [b]
+                current_parent = parent
+
+        if current_chunk: chunks.append((current_parent, current_chunk))
+
+        # Only care about actual sub-slices (taps)
+        for parent, chunk in chunks:
+            if parent != "CONSTANT" and len(chunk) < len(parent):
+                taps_by_parent.setdefault(parent, []).append(chunk)
+
+    # 3. Calculate Boundaries and build the Master Splitters
+    for parent, chunks in taps_by_parent.items():
+        parent_tuple = tuple(parent)
+        boundaries = {0, len(parent)}
+        for chunk in chunks:
+            start_idx = parent.index(chunk[0])
+            boundaries.add(start_idx)
+            boundaries.add(start_idx + len(chunk))
+
+        sorted_bounds = sorted(list(boundaries))
+        if len(sorted_bounds) <= 2: continue # Used whole; no splitter needed!
+
+        out_wires = []
+        segment_dict = {}
+
+        # Build the exact partitions
+        for i in range(len(sorted_bounds) - 1):
+            start = sorted_bounds[i]
+            end = sorted_bounds[i+1]
+            seg_chunk = parent[start:end]
+
+            # Check if this segment falls inside any requested chunk
+            is_needed = any(start >= parent.index(c[0]) and end <= (parent.index(c[0]) + len(c)) for c in chunks)
+
+            if is_needed:
+                wire = Wire(f"W_SEG_{seg_chunk[0]}_to_{seg_chunk[-1]}_{grid.x}_{grid.y}", end - start)
+                segment_dict[(start, end)] = wire
+                out_wires.append(wire)
+            else:
+                # Unused bits get routed to a Dummy/Null wire
+                out_wires.append(Wire(None, end - start))
+
+        # Spawn the Master Splitter!
+        x, y = grid.next()
+        compiler.add_splitter(x, y, get_wire(list(parent), current_module), out_wires)
+        compiler.parent_segments[parent_tuple] = segment_dict
+
 def resolve_bus(compiler: CircuitBuilder, grid, raw_bits: List[int], current_module: str, bit_registry: dict) -> Wire:
-    """
-    Intercepts an input bus request. Physically synthesizes Splitters/Mergers
-    on the grid if the bus is fractured (sliced or mixed with constants).
-    """
     if not raw_bits:
         return Wire(None, 0)
 
-    # 1. Pure Constant Check (Handled by your existing logic)
-    if all(isinstance(b, str) for b in raw_bits):
-        return get_wire(raw_bits, current_module)
+    # --- MEMOIZATION LAYER ---
+    cache_key = tuple(raw_bits)
+    if hasattr(compiler, 'resolved_buses') and cache_key in compiler.resolved_buses:
+        return compiler.resolved_buses[cache_key]
 
-    # 2. Sign Extension Trapping (Solves Repeating Splitters)
-    repeats = 0
-    for i in range(len(raw_bits) - 1, 0, -1):
-        if raw_bits[i] == raw_bits[i - 1]:
-            repeats += 1
-        else:
-            break
-
-    if repeats > 0:
-        # Chop off the repeats to get the core bits (e.g., the lower 20 bits of the offset)
-        base_bits = raw_bits[:len(raw_bits)-repeats]
-
-        # Recursively resolve the core bits (it might just be a standard wire)
-        base_wire = resolve_bus(compiler, grid, base_bits, current_module, bit_registry)
-
-        # Physically drop a Bit Extender to stretch it up to the full 32-bits
-        return get_padded_wire(compiler, grid, base_wire, len(raw_bits), current_module, is_signed=True)
-
-    # 3. Segment the requested bus into strictly contiguous chunks
-    chunks = []
-    current_chunk = []
-    current_parent = None
-
-    for b in raw_bits:
-        parent = bit_registry.get(b, "CONSTANT") if isinstance(b, int) else "CONSTANT"
-
-        is_contiguous = False
-        if parent != "CONSTANT" and current_parent == parent and current_chunk:
-            # Check if this bit is perfectly adjacent to the previous bit in the parent array
-            prev_idx = parent.index(current_chunk[-1])
-            curr_idx = parent.index(b)
-            if curr_idx == prev_idx + 1:
-                is_contiguous = True
-
-        if parent == current_parent and (parent == "CONSTANT" or is_contiguous):
-            current_chunk.append(b)
-        else:
-            if current_chunk:
-                chunks.append((current_parent, current_chunk))
-            current_chunk = [b]
-            current_parent = parent
-
-    if current_chunk:
-        chunks.append((current_parent, current_chunk))
-
-    # 3. Pure Parent Check: No hardware needed!
-    if len(chunks) == 1:
-        parent, chunk = chunks[0]
-        if parent == tuple(raw_bits):
+    def _resolve():
+        if all(isinstance(b, str) for b in raw_bits):
             return get_wire(raw_bits, current_module)
 
-    # 4. Synthesize Physical Hardware for Fractured Buses
-    chunk_wires = []
-    for parent, chunk in chunks:
-        if parent == "CONSTANT":
-            chunk_wires.append(get_wire(chunk, current_module))
-        elif len(chunk) == len(parent):
-            chunk_wires.append(get_wire(list(parent), current_module))
-        else:
-            # Sliced Bus: We must physically tap the Parent Bus
-            start_idx = parent.index(chunk[0])
-            end_idx = start_idx + len(chunk)
+        # Sign Extension Trapping
+        repeats = 0
+        for i in range(len(raw_bits) - 1, 0, -1):
+            if raw_bits[i] == raw_bits[i - 1]: repeats += 1
+            else: break
 
-            out_wires = []
-            if start_idx > 0:
-                out_wires.append(Wire(None, start_idx)) # Pre-chunk dummy drop
+        if repeats > 0:
+            base_bits = raw_bits[:len(raw_bits)-repeats]
+            base_wire = resolve_bus(compiler, grid, base_bits, current_module, bit_registry)
+            return get_padded_wire(compiler, grid, base_wire, len(raw_bits), current_module, is_signed=True)
 
-            tap_wire = Wire(f"W_TAP_{chunk[0]}_to_{chunk[-1]}_{grid.x}_{grid.y}", len(chunk))
-            out_wires.append(tap_wire)
+        chunks = []
+        current_chunk = []
+        current_parent = None
 
-            if end_idx < len(parent):
-                out_wires.append(Wire(None, len(parent) - end_idx)) # Post-chunk dummy drop
+        for b in raw_bits:
+            parent = bit_registry.get(b, "CONSTANT") if isinstance(b, int) else "CONSTANT"
+            is_contiguous = False
+            if parent != "CONSTANT" and current_parent == parent and current_chunk:
+                if parent.index(b) == parent.index(current_chunk[-1]) + 1:
+                    is_contiguous = True
 
+            if parent == current_parent and (parent == "CONSTANT" or is_contiguous):
+                current_chunk.append(b)
+            else:
+                if current_chunk: chunks.append((current_parent, current_chunk))
+                current_chunk = [b]
+                current_parent = parent
+
+        if current_chunk: chunks.append((current_parent, current_chunk))
+
+        if len(chunks) == 1:
+            parent, chunk = chunks[0]
+            if parent == tuple(raw_bits):
+                return get_wire(raw_bits, current_module)
+
+        # Assemble the hardware
+        chunk_wires = []
+        for parent, chunk in chunks:
+            if parent == "CONSTANT":
+                chunk_wires.append(get_wire(chunk, current_module))
+            elif len(chunk) == len(parent):
+                chunk_wires.append(get_wire(list(parent), current_module))
+            else:
+                # Sliced Bus: Tap the Master Splitter segments!
+                start_idx = parent.index(chunk[0])
+                end_idx = start_idx + len(chunk)
+                parent_tuple = tuple(parent)
+
+                # Fetch from our pre-pass dictionary
+                if hasattr(compiler, 'parent_segments') and parent_tuple in compiler.parent_segments:
+                    sub_segments = []
+                    curr_idx = start_idx
+
+                    # Gather the Master Splitter segments that make up this specific chunk
+                    while curr_idx < end_idx:
+                        for (s_start, s_end), wire in compiler.parent_segments[parent_tuple].items():
+                            if s_start == curr_idx:
+                                sub_segments.append(wire)
+                                curr_idx = s_end
+                                break
+
+                    if len(sub_segments) == 1:
+                        chunk_wires.append(sub_segments[0])
+                    else:
+                        # Sometimes a requested slice spans across multiple boundaries 
+                        # requested by someone else. We merge them back together here.
+                        merged_label = "_".join(str(b) for b in chunk[:3])
+                        target_wire = Wire(f"W_REBUILD_{merged_label}_{grid.x}_{grid.y}", len(chunk))
+                        x, y = grid.next()
+                        compiler.add_splitter(x, y, target_wire, sub_segments)
+                        chunk_wires.append(target_wire)
+                else:
+                    # Fallback (Should rarely hit)
+                    out_wires = []
+                    if start_idx > 0: out_wires.append(Wire(None, start_idx))
+                    tap_wire = Wire(f"W_TAP_{chunk[0]}_to_{chunk[-1]}_{grid.x}_{grid.y}", len(chunk))
+                    out_wires.append(tap_wire)
+                    if end_idx < len(parent): out_wires.append(Wire(None, len(parent) - end_idx))
+                    x, y = grid.next()
+                    compiler.add_splitter(x, y, get_wire(list(parent), current_module), out_wires)
+                    chunk_wires.append(tap_wire)
+
+        # Merge Multiple Chunks together
+        if len(chunk_wires) > 1:
+            merged_label = "_".join(str(b) for b in raw_bits[:3])
+            target_wire = Wire(f"W_MERGE_{merged_label}_{grid.x}_{grid.y}", len(raw_bits))
             x, y = grid.next()
-            compiler.add_splitter(x, y, get_wire(list(parent), current_module), out_wires)
-            chunk_wires.append(tap_wire)
+            compiler.add_splitter(x, y, target_wire, chunk_wires)
+            return target_wire
 
-    # 5. Merge Multiple Chunks together
-    if len(chunk_wires) > 1:
-        merged_label = "_".join(str(b) for b in raw_bits[:3]) # Shorten name to avoid massive strings
-        target_wire = Wire(f"W_MERGE_{merged_label}_{grid.x}_{grid.y}", len(raw_bits))
+        return chunk_wires[0]
 
-        x, y = grid.next()
-        # The Splitter is bidirectional. Connecting target to in_bus and chunks to out_wires merges them.
-        compiler.add_splitter(x, y, target_wire, chunk_wires)
-        return target_wire
+    # Execute, Cache, and Return
+    final_wire = _resolve()
+    if hasattr(compiler, 'resolved_buses'):
+        compiler.resolved_buses[cache_key] = final_wire
+    return final_wire
 
-    return chunk_wires[0]
 
 
 class GridAllocator:
@@ -1400,6 +1507,9 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str, OPTIMIZE:
         compiler.set_active_circuit(safe_mod_name)
         
         grid = GridAllocator(X_INIT, Y_INIT, X_SPACING, Y_SPACING, X_MAX)
+
+        compiler.resolved_buses = {} # Clear the memoization cache per-module
+        build_master_splitters(compiler, grid, module_data, bit_registry, safe_mod_name)
 
         # Helper for Outputs (Directly defines parent buses)
         def gw(bits): return get_wire(bits, safe_mod_name)
@@ -2060,7 +2170,7 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str, OPTIMIZE:
 if __name__ == "__main__":
     compiler = CircuitBuilder()
 
-    OPTIMIZE = True
+    OPTIMIZE = True 
     # No cli flag yet...
 
     # 1. Parse the Silicon Netlist into the Compiler Memory
