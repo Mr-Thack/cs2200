@@ -1,0 +1,46 @@
+CS 2200 Project 4
+
+Name: AbdulMuqeet Mohammed 
+GTID: 903960955
+GT_Email: amohammed98@gatech.edu 
+Section: A02
+
+==============================================
+
+___________________________
+Problem-1 (FCFS Scheduler)
+---------------------------
+No time for stats. You should see a semi linear gain for the first 2.
+However, as time goes on, adding more processors doesn't help.
+Since you'll be IO limited when you add some large number of processors,
+adding more processors won't help with time as much. But, in the early stages,
+you'd see a linear relationship.
+
+________________________
+Problem-2 (Round-Robin)
+------------------------
+Shortening time slices will initially decrease waiting time.
+But, at some point, you'll make them too short and then you'll have too much overhead.
+This excessive overhead will cause your effective waiting time to increase
+when your time slices are too small. The relationship is initially linear.
+Later, it's roughly constant.
+The shortest timeslice is not necessarily good because of excessive overhead.
+
+
+________________________________
+Problem-3 (Preemptive Priority)
+--------------------------------
+Age them. Lower Priority Processes that have been waiting for a while need to be bumped up in priority.
+Typically, this is done by "aging" them. So, the longer they've been waiting,
+the higher their priority gets "bumped" over their original priority.
+This mitigates the effects of lower priority processes never being run due to
+higher priority processes always taking precedence over them. 
+
+
+___________________________________________
+Problem-4 (The Priority Inversion Problem)
+-------------------------------------------
+Since P1 is dependent upon the window manager, the Window Manager should actually
+temporarily receive a status of High Priority (just like P1) since, for now,
+P1 is just an extension of the Window Manager. Then, once the Window Manager is done
+with serving P1, it gets demoted again.
