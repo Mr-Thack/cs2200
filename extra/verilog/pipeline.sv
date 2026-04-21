@@ -146,7 +146,7 @@ always_ff @(posedge clk) begin
                 if (dbuf_out.btb_hit) begin
                     stat_btb_hits <= stat_btb_hits + 32'd1;
                 end else begin
-                    stat_btb_hits <= stat_btb_misses + 32'd1;
+                    stat_btb_misses <= stat_btb_misses + 32'd1;
                 end
             end
 
@@ -194,8 +194,8 @@ localparam MEM_SIZE = 65536;
 
 // Load from Init ROM
 initial begin
-    $readmemh("../pow.hex", IMEM);
-    $readmemh("../pow.hex", DMEM);
+    $readmemh("../fib.hex", IMEM);
+    $readmemh("../fib.hex", DMEM);
 end
 
 btb_read_data btb_rdata;
