@@ -1,14 +1,14 @@
 #!/usr/bin/expect
 
 
-spawn python simulator.py ./pow.bin
+spawn python simulator.py ../TwoSum.bin
 
 after 500
 
 set timeout 0; # but wait in the while loop
 set count 0
 
-while {$count < 30} {
+while {1} {
     send "s\r"
     incr count
 
