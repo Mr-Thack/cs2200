@@ -48,3 +48,11 @@ But, sadly, went over CircuitSim limits again...
 Fifth Attempt.2:
 More CircuitSim Optimization!!!
 POW: 1255, FIB: 5398, TWO_SUM: 2324
+
+FSM Attempt 1:
+This was just to help a friend, but I got this (1.45x speedup) by making Fetch 1 cycle:
+POW: 5683, FIB: 22012, TWO_SUM: 8550
+
+Baselining:
+I hadn't ever found the original baseline. But, I did now!
+POW: 8129, FIB: 32312, TWO_SUM: 12314
