@@ -2171,13 +2171,14 @@ if __name__ == "__main__":
     compiler = CircuitBuilder()
 
     OPTIMIZE = True 
+    OPTIMIZE_TUNNELS = False
     # No cli flag yet...
 
     # 1. Parse the Silicon Netlist into the Compiler Memory
     parse_yosys_netlist(compiler, "build/netlist.json", OPTIMIZE)
 
     # 2. Optimize (Split) Tunnels
-    if OPTIMIZE:
+    if OPTIMIZE_TUNNELS:
         compiler.optimize_tunnel_clusters()
 
     # 3. Stats!

@@ -1,0 +1,13 @@
+main       : 0x0
+loop       : 0x2
+found      : 0x1a
+contains   : 0x1c
+check      : 0x1f
+rettrue    : 0x27
+retfalse   : 0x29
+initsp     : 0x2b
+prev       : 0x2c
+prevlen    : 0x2d
+len        : 0x2e
+target     : 0x2f
+nums       : 0x30

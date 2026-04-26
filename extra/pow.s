@@ -33,7 +33,7 @@ CALL:
     ! 19 Instructions before this
 
     BASE:   .fill 2
-    EXP:    .fill 8
+    EXP:    .fill 2
     ANS:	  .fill 0                                 ! should come out to 256 (BASE^EXP)
 
 RET1:
