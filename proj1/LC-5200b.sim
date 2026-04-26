@@ -318,17 +318,6 @@
         },
         {
           "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
-          "x": 60,
-          "y": 101,
-          "properties": {
-            "Label": "OP",
-            "Direction": "EAST",
-            "Width": "2",
-            "Bitsize": "4"
-          }
-        },
-        {
-          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
           "x": 66,
           "y": 74,
           "properties": {
@@ -406,10 +395,10 @@
         },
         {
           "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
-          "x": 44,
-          "y": 10,
+          "x": 37,
+          "y": 12,
           "properties": {
-            "Label": "CLK",
+            "Label": "RST",
             "Direction": "WEST",
             "Width": "3",
             "Bitsize": "1"
@@ -417,10 +406,10 @@
         },
         {
           "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
-          "x": 41,
-          "y": 12,
+          "x": 49,
+          "y": 10,
           "properties": {
-            "Label": "RST",
+            "Label": "CLK",
             "Direction": "WEST",
             "Width": "3",
             "Bitsize": "1"
@@ -604,7 +593,7 @@
         },
         {
           "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
-          "x": 28,
+          "x": 25,
           "y": 26,
           "properties": {
             "Label": "LdPC",
@@ -648,17 +637,6 @@
         },
         {
           "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
-          "x": 86,
-          "y": 8,
-          "properties": {
-            "Label": "HALT",
-            "Direction": "EAST",
-            "Width": "4",
-            "Bitsize": "1"
-          }
-        },
-        {
-          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
           "x": 93,
           "y": 80,
           "properties": {
@@ -688,27 +666,6 @@
             "Direction": "WEST",
             "Width": "4",
             "Bitsize": "1"
-          }
-        },
-        {
-          "name": "com.ra4king.circuitsim.gui.peers.wiring.Tunnel",
-          "x": 68,
-          "y": 102,
-          "properties": {
-            "Label": "HALT",
-            "Direction": "WEST",
-            "Width": "4",
-            "Bitsize": "1"
-          }
-        },
-        {
-          "name": "com.ra4king.circuitsim.gui.peers.io.Button",
-          "x": 35,
-          "y": 12,
-          "properties": {
-            "Label location": "WEST",
-            "Label": "RESET",
-            "Direction": "EAST"
           }
         },
         {
@@ -800,6 +757,16 @@
           }
         },
         {
+          "name": "com.ra4king.circuitsim.gui.peers.io.Button",
+          "x": 35,
+          "y": 12,
+          "properties": {
+            "Label location": "WEST",
+            "Label": "RST",
+            "Direction": "EAST"
+          }
+        },
+        {
           "name": "com.ra4king.circuitsim.gui.peers.wiring.ConstantPeer",
           "x": 10,
           "y": 17,
@@ -853,6 +820,19 @@
         },
         {
           "name": "com.ra4king.circuitsim.gui.peers.wiring.ConstantPeer",
+          "x": 88,
+          "y": 9,
+          "properties": {
+            "Label location": "NORTH",
+            "Label": "",
+            "Value": "1",
+            "Direction": "EAST",
+            "Bitsize": "1",
+            "Base": "BINARY"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.wiring.ConstantPeer",
           "x": 101,
           "y": 3,
           "properties": {
@@ -875,30 +855,6 @@
             "Direction": "EAST",
             "Bitsize": "1",
             "Base": "BINARY"
-          }
-        },
-        {
-          "name": "com.ra4king.circuitsim.gui.peers.wiring.ConstantPeer",
-          "x": 60,
-          "y": 103,
-          "properties": {
-            "Label location": "NORTH",
-            "Label": "",
-            "Value": "0111",
-            "Direction": "EAST",
-            "Bitsize": "4",
-            "Base": "BINARY"
-          }
-        },
-        {
-          "name": "com.ra4king.circuitsim.gui.peers.arithmetic.ComparatorPeer",
-          "x": 64,
-          "y": 101,
-          "properties": {
-            "Comparison Type": "2\u0027s complement",
-            "Label location": "NORTH",
-            "Label": "",
-            "Bitsize": "4"
           }
         },
         {
@@ -1229,7 +1185,7 @@
           "y": 10,
           "properties": {
             "Label location": "WEST",
-            "Label": "CLOCK",
+            "Label": "CLK",
             "Direction": "EAST"
           }
         },
@@ -1240,7 +1196,7 @@
           "properties": {
             "Label location": "NORTH",
             "Label": "BREAK INS",
-            "Value": "45",
+            "Value": "100",
             "Bitsize": "32"
           }
         },
@@ -1251,7 +1207,7 @@
           "properties": {
             "Label location": "NORTH",
             "Label": "BREAK INS",
-            "Value": "7",
+            "Value": "1880",
             "Bitsize": "32"
           }
         },
@@ -1713,17 +1669,6 @@
           }
         },
         {
-          "name": "com.ra4king.circuitsim.gui.peers.gates.NotGatePeer",
-          "x": 92,
-          "y": 8,
-          "properties": {
-            "Label location": "NORTH",
-            "Label": "",
-            "Direction": "EAST",
-            "Bitsize": "1"
-          }
-        },
-        {
           "name": "com.ra4king.circuitsim.gui.peers.misc.Text",
           "x": 2,
           "y": 6,
@@ -1824,6 +1769,12 @@
           "isHorizontal": true
         },
         {
+          "x": 31,
+          "y": 27,
+          "length": 3,
+          "isHorizontal": true
+        },
+        {
           "x": 34,
           "y": 5,
           "length": 2,
@@ -1832,13 +1783,7 @@
         {
           "x": 37,
           "y": 11,
-          "length": 7,
-          "isHorizontal": true
-        },
-        {
-          "x": 37,
-          "y": 13,
-          "length": 4,
+          "length": 12,
           "isHorizontal": true
         },
         {
@@ -2514,6 +2459,12 @@
           "isHorizontal": true
         },
         {
+          "x": 90,
+          "y": 10,
+          "length": 4,
+          "isHorizontal": true
+        },
+        {
           "x": 88,
           "y": 81,
           "length": 4,
@@ -2578,6 +2529,18 @@
           "y": 79,
           "length": 2,
           "isHorizontal": true
+        },
+        {
+          "x": 94,
+          "y": 9,
+          "length": 1,
+          "isHorizontal": true
+        },
+        {
+          "x": 94,
+          "y": 9,
+          "length": 1,
+          "isHorizontal": false
         },
         {
           "x": 99,
@@ -7834,18 +7797,6 @@
           }
         },
         {
-          "name": "com.ra4king.circuitsim.gui.peers.memory.ROMPeer",
-          "x": 22,
-          "y": 11,
-          "properties": {
-            "Label location": "NORTH",
-            "Contents": "0030040 3-0000000 0000004 4080806 8100807 0202000 4080009 810080a 1202000 408080c 010800d 0202000 408080f 0108010 0042011 0201000 4080813 0108014 0042015 0400800 0080817 4100818 0802400 008401a 010801b 0012000 420401d 0010800 008081f 4100820 0802600 0084022 0108023 0202000 4080825 8100826 08022a8 2202000 2a02000 408082a 810082b 08026a8 20-0000000",
-            "Label": "Main",
-            "Bitsize": "28",
-            "Address bits": "6"
-          }
-        },
-        {
           "name": "com.ra4king.circuitsim.gui.peers.wiring.ConstantPeer",
           "x": 35,
           "y": 72,
@@ -7869,6 +7820,18 @@
             "Direction": "WEST",
             "Bitsize": "6",
             "Base": "BINARY"
+          }
+        },
+        {
+          "name": "com.ra4king.circuitsim.gui.peers.memory.ROMPeer",
+          "x": 22,
+          "y": 11,
+          "properties": {
+            "Label location": "NORTH",
+            "Contents": "0030040 3-0000000 0000004 4080806 8100807 0202000 4080809 810080a 1202000 408080c 010800d 0202000 408080f 0108010 0042011 0201000 4080813 0108014 0042015 0400800 0080817 4100818 0802400 008401a 010801b 0012000 420401d 0010800 008081f 4100820 0802600 0084022 0108023 0202000 4080825 8100826 08022a8 2202000 2a02000 408082a 810082b 08026a8 20-0000000",
+            "Label": "Main",
+            "Bitsize": "28",
+            "Address bits": "6"
           }
         },
         {
@@ -8947,6 +8910,18 @@
     "ZGQ0NWI1ZTFjZDMxNDBmN2ViZmM4MTI2YWEzZGI2Njc5NDg0Mzk0NGQ0ZmZmMmFlODliNGNjNTcwMTg3MzQ2YwljMTYwOTk5Nzk0ZWQ0YjZjMDhjZTU4NzQ4YzE3MDVkNzZiMzk1OGJhNWZmOWJhNTI1MjQ1MWNhODc4NWRkNTQyCTE3NzcwOTE3NDEwNzcJMjIzZjljN2M3MjNlNDM1NTUxNDIwMGI3NzM5NDlmMjJjZDU0Y2NjOTE4MzdlOThiNWYzMjE5YjA5OGU4ZjFkNw\u003d\u003d",
     "YzE2MDk5OTc5NGVkNGI2YzA4Y2U1ODc0OGMxNzA1ZDc2YjM5NThiYTVmZjliYTUyNTI0NTFjYTg3ODVkZDU0MgkyN2NhNzMyOGNiOWU3MGEyNzFhOGJkNDM2NjcwY2Q1YTE1NDVhN2JlNTUzYTZkMzkwOGQ4ZWI5MDkwNTRiNTZlCTE3NzcwOTE5ODc2MzIJNzg0Yjk1OWJkYTFkM2Y5MGYwZDdlODRiYzZlZWE4N2UyMTZhYjUyZjQzNDU3YWExZDkzZTcxYmI1YTc1NmY5MQ\u003d\u003d",
     "MjdjYTczMjhjYjllNzBhMjcxYThiZDQzNjY3MGNkNWExNTQ1YTdiZTU1M2E2ZDM5MDhkOGViOTA5MDU0YjU2ZQliMTM0OGIyZmFjZmVlZDUzZTRkZmEwZjNkN2I1MzQ4ZjkwYzdjODdkMTkxMzZmNmU3OTYxMzk4ZjFlZGRlNjQ4CTE3NzcwOTE5ODg5NzMJNzg0Yjk1OWJkYTFkM2Y5MGYwZDdlODRiYzZlZWE4N2UyMTZhYjUyZjQzNDU3YWExZDkzZTcxYmI1YTc1NmY5MQ\u003d\u003d",
-    "YjEzNDhiMmZhY2ZlZWQ1M2U0ZGZhMGYzZDdiNTM0OGY5MGM3Yzg3ZDE5MTM2ZjZlNzk2MTM5OGYxZWRkZTY0OAk1NjM1ODljZGQzMzI4NDJjYzUyMzE1ZmRjNDI5ZTgxZGI4MjU2YTNhYjAyMzE0NGYyMzcyMWIyMDI0NWIwOTdmCTE3NzcwOTI1ODQ1NDgJMmIwNjE3NzA0ZWM5NDcwOTRjM2NlYTVhYTFjZGJmZmVjNzU0OTJjZTU2ZGY2ODdmZGYxNDBhYjQ4MjI0MGFmMQ\u003d\u003d"
+    "YjEzNDhiMmZhY2ZlZWQ1M2U0ZGZhMGYzZDdiNTM0OGY5MGM3Yzg3ZDE5MTM2ZjZlNzk2MTM5OGYxZWRkZTY0OAk1NjM1ODljZGQzMzI4NDJjYzUyMzE1ZmRjNDI5ZTgxZGI4MjU2YTNhYjAyMzE0NGYyMzcyMWIyMDI0NWIwOTdmCTE3NzcwOTI1ODQ1NDgJMmIwNjE3NzA0ZWM5NDcwOTRjM2NlYTVhYTFjZGJmZmVjNzU0OTJjZTU2ZGY2ODdmZGYxNDBhYjQ4MjI0MGFmMQ\u003d\u003d",
+    "NTYzNTg5Y2RkMzMyODQyY2M1MjMxNWZkYzQyOWU4MWRiODI1NmEzYWIwMjMxNDRmMjM3MjFiMjAyNDViMDk3ZgliZjhmODRmNzQxNWVhMjE2NTM4NjhmMmY2MWYyOWQxZTlmZjNjYTMxOWNkYjFjZWZkODM5Y2U5MGQ2ODJjZDcxCTE3NzcwOTI5ODc0MDQJOGU4YzI4ODBhMTVkN2UxYzRhZGE3NjFjYjA5MDI0MjUzMzliMzliNTk2MDk4ZTQyNTlkMjU0NmRkZmMzNmU0YQ\u003d\u003d",
+    "YmY4Zjg0Zjc0MTVlYTIxNjUzODY4ZjJmNjFmMjlkMWU5ZmYzY2EzMTljZGIxY2VmZDgzOWNlOTBkNjgyY2Q3MQk3ZjY0ODQ4ZjQ5ZDA3NjQxM2NmY2VhYjFhNjdiNGY2OTIyNjk0OGIzYzYyYWMxOTAzYmU0MDk1Nzc5MWVkZDA4CTE3NzcwOTQ0OTk2NzIJZjQxZTc4ZTVlOTRjYWIwZDYxYmViODMzNGEwZGY4ZmQ0OTkxZjk1NTYyYmE1NTY1ZjRiYzM1Mzk1NGRhOTY0Yw\u003d\u003d",
+    "N2Y2NDg0OGY0OWQwNzY0MTNjZmNlYWIxYTY3YjRmNjkyMjY5NDhiM2M2MmFjMTkwM2JlNDA5NTc3OTFlZGQwOAk3MjZlMjk2Y2VmNjgzZTVlMTk5NTRiMGIzYWQwMThjMDBlOTBmZDkyODAzOWFhMzEzNWFlYjNlYTNmODYyOGI5CTE3NzcwOTQ2MjcwMTgJOWE0ODljZWJhOGU4YjM4MTkyZWNlMzA3NDIyOGZlMGIwMTVkZDk0MGRlN2E3MzY3MmE2NzI4YWY4ODI2MmRhMw\u003d\u003d",
+    "NzI2ZTI5NmNlZjY4M2U1ZTE5OTU0YjBiM2FkMDE4YzAwZTkwZmQ5MjgwMzlhYTMxMzVhZWIzZWEzZjg2MjhiOQkxY2Y2YWQzZTk4NThiYTk0MzUyNWFkM2E4Nzc3NmJiMmIzMDYwNTQ2ODUxYWQ5OWIyZGUyZjVlY2VmMDNjYTgxCTE3NzcwOTQ2MjgwODYJOWE0ODljZWJhOGU4YjM4MTkyZWNlMzA3NDIyOGZlMGIwMTVkZDk0MGRlN2E3MzY3MmE2NzI4YWY4ODI2MmRhMw\u003d\u003d",
+    "MWNmNmFkM2U5ODU4YmE5NDM1MjVhZDNhODc3NzZiYjJiMzA2MDU0Njg1MWFkOTliMmRlMmY1ZWNlZjAzY2E4MQkzY2NkMzE0YWFiZjE2ZWI5NTc2MDBiOWQ5NjJlMjZkMGIwMTQzMzAxNGI1MmM2ZDY2OTgxMTI5ZTBhZGY5ZmRiCTE3NzcwOTQ5MTA5NjIJZThlNjc4YmFjMDQ3NTJhMmRjMTI5ZWE5Zjg1M2JiNTQzYmExYTBkNTEyMTM0MTQ5Mjk1N2ViYzVkNDA1ODg2OA\u003d\u003d",
+    "M2NjZDMxNGFhYmYxNmViOTU3NjAwYjlkOTYyZTI2ZDBiMDE0MzMwMTRiNTJjNmQ2Njk4MTEyOWUwYWRmOWZkYgk3ZmU3NmY1MTQ5ZTRlYTBkMGZlYjRmNWVjNzUyM2FjMzU4ZDEzYWIxMmY2MGRhMjAyZTA4ZDAyNzc5ZDJkMmQzCTE3NzcwOTQ5NjA4MjUJYWQ4NDZhNTIxOWEwZjZmMTExMDEwM2ZmNzExMTdjNjNmMmE4MmQ2YjAxNjcxNjU1ZmYwMGNhODY1ZjczNDJlMw\u003d\u003d",
+    "N2ZlNzZmNTE0OWU0ZWEwZDBmZWI0ZjVlYzc1MjNhYzM1OGQxM2FiMTJmNjBkYTIwMmUwOGQwMjc3OWQyZDJkMwkwYTg1NmIxMGY1MDU4ZjBiMTkyMThkOTU2MzNmYzUzZmJmODI2OTVjMzUwMmU0ZTI0MGI2MDRkYmY4YTIxNzhkCTE3NzcwOTU2NDkzMzAJZGYzMDk2MGI3OWMwNDI2MmNlMTJkYWM0ZDQ4ZGU2NjkwMmNhOTBhNTIxNzE2NGJmZTVjMTRiYjY3ZGZkY2JiNQ\u003d\u003d",
+    "MGE4NTZiMTBmNTA1OGYwYjE5MjE4ZDk1NjMzZmM1M2ZiZjgyNjk1YzM1MDJlNGUyNDBiNjA0ZGJmOGEyMTc4ZAk1YmMzM2FhYjkyODlmZjllMzIxNmZhNTUxZmEzNTg2YTczMDU1MmU4N2Y0OWM1ZDdlMTA5MzU0YTA2ODNkYjAyCTE3NzcwOTU2NTEyNDgJZGYzMDk2MGI3OWMwNDI2MmNlMTJkYWM0ZDQ4ZGU2NjkwMmNhOTBhNTIxNzE2NGJmZTVjMTRiYjY3ZGZkY2JiNQ\u003d\u003d",
+    "NWJjMzNhYWI5Mjg5ZmY5ZTMyMTZmYTU1MWZhMzU4NmE3MzA1NTJlODdmNDljNWQ3ZTEwOTM1NGEwNjgzZGIwMgk4MjZkN2ZiMGQ5NGNhOTc5MWRiNTMxZmE4MDQwZTc4MmJiOWEyODdlZTA1M2Q1MDg2NjliYjZiNmM3NDY1YmVhCTE3NzcyMzY3MDgyNzkJMDUwNzkwY2JhOTgxMDg5MzcwNDg1YjBiYmYzODM4NzVkOTg5MWM5YTNlMjU3ZTIzNzExMmFmY2E3ZTQ1ZWI1Nw\u003d\u003d",
+    "ODI2ZDdmYjBkOTRjYTk3OTFkYjUzMWZhODA0MGU3ODJiYjlhMjg3ZWUwNTNkNTA4NjY5YmI2YjZjNzQ2NWJlYQk0Zjc5NjM3MjA5ZDA1MmQ0ZDNkNmRhYmQ5ODQxNWVhYWU0Yzg1YjM5NWNiOTIyOTg3MWNkNGIwZTI0M2RkY2EwCTE3NzcyMzY5MjQxMzMJOGFkMWFiNmQwM2Y1NDJlNDlhMWQ3YTFkYzQ4NTZhMGJkNzgxOTlhMTllYmI3OGQzMDNkYjM5YmRjMTFjNGQwMw\u003d\u003d",
+    "NGY3OTYzNzIwOWQwNTJkNGQzZDZkYWJkOTg0MTVlYWFlNGM4NWIzOTVjYjkyMjk4NzFjZDRiMGUyNDNkZGNhMAliZjlkOTNhYWE3N2Q2MTFiNzYwOTA2ZTk1YzEyOTI0NTlkMWRlMjQ1MTE3M2FiNzE2MzY5NTA4YjljNGQzNzcyCTE3NzcyMzY5MjU3NTQJOGFkMWFiNmQwM2Y1NDJlNDlhMWQ3YTFkYzQ4NTZhMGJkNzgxOTlhMTllYmI3OGQzMDNkYjM5YmRjMTFjNGQwMw\u003d\u003d",
+    "YmY5ZDkzYWFhNzdkNjExYjc2MDkwNmU5NWMxMjkyNDU5ZDFkZTI0NTExNzNhYjcxNjM2OTUwOGI5YzRkMzc3Mgk5OGMwMjUwMTgyMjVmODVlZjcxZjY2MGRiMWI3NzE1MzQ0MzBhYzc0NWY1NTNiNGFjOGZhNGM4OWZiYTA5YWM2CTE3NzcyMzgzOTEzMjEJMWE0NTA3ZTE5MzY3NDlkMDg5YmJhZWYwNTZkYzI2NjA3MGY3NGM0NzU0ODA3MTFhNTY2ZDg3NTdjNmYzNWQ5Ng\u003d\u003d"
   ]
 }
