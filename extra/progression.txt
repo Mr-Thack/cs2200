@@ -56,3 +56,5 @@ POW: 5683, FIB: 22012, TWO_SUM: 8550
 Baselining:
 I hadn't ever found the original baseline. But, I did now!
 POW: 8129, FIB: 32312, TWO_SUM: 12314
+And the number of instructions:
+POW: 1223, FIB: 5150, TWO_SUM: 1882 

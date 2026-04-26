@@ -1,7 +1,7 @@
 #!/usr/bin/expect
 
 
-spawn python simulator.py ../TwoSum.bin
+spawn python simulator.py ./fib.bin
 
 after 500
 
