@@ -42,10 +42,7 @@ always_comb begin
         LOGIC_JMP_RES: begin
             branch_taken = '0;
             branch_target = 'X;
-            out = pc; // Return address for JALR...
-            // I guess this works. But maybe not modular enough.
-            // We no longer need to JMP here since we moved JALR jumping
-            // evaluations to FETCH and DECODE
+            out = in;
         end
 
         LOGIC_IGNORE: begin

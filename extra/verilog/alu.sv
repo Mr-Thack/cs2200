@@ -10,6 +10,7 @@ module alu(
             ALU_SUB: out = a - b;
             ALU_NAND: out = ~(a & b);
             ALU_ADD1: out = a + 32'd1;
+            ALU_NEG: out = -a;
             ALU_PASSA: out = a;
             ALU_PASSB: out = b; 
             ALU_IGNORE: out = 'X;

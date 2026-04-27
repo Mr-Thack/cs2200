@@ -3,7 +3,8 @@ module fetch(
     input logic rst,
 
     input logic [31:0] PC,
-    input instruction_data IR,
+    input instruction_data IR1,
+    input instruction_data IR2,
     
     input logic branch_taken,
     input logic stall_now,
@@ -22,11 +23,21 @@ module fetch(
 
 
 logic [31:0] ext_imm;
-assign ext_imm = {{12{IR.imm[19]}}, IR.imm};
+assign ext_imm = {{12{IR1.imm[19]}}, IR1.imm};
+
+control_word_t cw;
+
+fusion fuse(
+    .ins1(IR1),
+    .ins2(IR2),
+    .cw(cw)
+);
 
 always_comb begin
-    fbuf.instruction = IR;
     fbuf.pc_plus_1 = PC + 32'd1;
+    fbuf.ins1 = IR1;
+    fbuf.ins2 = IR2;
+    fbuf.cw = cw;
 
     ras_pop = 1'b0;
     predict_taken = '0;
@@ -47,14 +58,14 @@ always_comb begin
     // enough.
     predict_target = 'X;
 
-    if (IR.opcode inside {OP_BEQ, OP_BGT}) begin
+    if (IR1.opcode inside {OP_BEQ, OP_BGT}) begin
         // This is what we do if if the branch is taken
         predict_taken = 1'b1;
         // The ISA treats branch offset as starting from PC + 1
         predict_target = $signed(fbuf.pc_plus_1 + $signed(ext_imm));
 
         // If not trivially true
-        if (IR.rx != IR.ry) begin
+        if (IR1.rx != IR1.ry) begin
             if (rdata.valid) begin
                 predict_taken = rdata.take;
             end else if ($signed(ext_imm) > 0) begin 
@@ -64,9 +75,9 @@ always_comb begin
         end
     end
     
-    if (IR.opcode == OP_JALR) begin
+    if (IR1.opcode == OP_JALR) begin
         predict_taken = 1'b1;
-        if (IR.ry == 4'd0) begin
+        if (IR1.ry == 4'd0) begin
             // Pop RAS because this is a return
             predict_target = ras_pop_data;
             ras_pop = !branch_taken && !stall_now;
@@ -77,7 +88,6 @@ always_comb begin
             predict_taken = 1'b0;
         end 
     end
-
 
     fbuf.predicted_taken = predict_taken;
     fbuf.predict_target = predict_target;

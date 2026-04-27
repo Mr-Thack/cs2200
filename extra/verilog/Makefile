@@ -1,7 +1,7 @@
 # --- Variables ---
 TYPES = types.sv
 SRC = pipeline.sv
-COMPONENTS = btb.sv ras.sv dprf.sv fetch.sv decode.sv alu.sv cmp.sv log.sv execute.sv
+COMPONENTS = btb.sv ras.sv dprf.sv fusion.sv fetch.sv decode.sv alu.sv cmp.sv log.sv execute.sv
 TB = test.sv
 
 CS_CELLS = ccellscs.sv 
@@ -33,6 +33,7 @@ verilog: $(V_SRCS)
 # --- Simulation ---
 test: $(V_SRCS) $(IV_CELLS) $(TB)
 	@echo "--- Compiling Simulation ---"
+	python generator.py
 	iverilog -g2012 -o $(OUT) $(IV_CELLS) $(V_SRCS) $(TB)
 	@echo "--- Running Simulation ---"
 	vvp $(OUT)

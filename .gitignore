@@ -4,3 +4,5 @@
 *a.out*
 *build*
 *waves.vcd*
+*.hex
+*.sym

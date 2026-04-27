@@ -73,7 +73,7 @@ always_ff @(posedge clk) begin
 
         // 3. Step Forward Normally
         end else begin
-            PC <= PC + 32'd1;
+            PC <= PC + 32'(fbuf_in.cw.instructions_merged + 1);
         end
 
     end
@@ -87,7 +87,9 @@ end
 logic [31:0] stat_cycles;
 logic [31:0] stat_stalls;
 logic [31:0] stat_flushes;
-logic [31:0] stat_inst_retired;
+
+logic [31:0] stat_logical_inst_retired;
+logic [31:0] stat_physical_inst_retired;
 
 // 2. BTB Cache Performance
 logic [31:0] stat_btb_hits;
@@ -109,7 +111,8 @@ always_ff @(posedge clk) begin
         stat_cycles <= '0;
         stat_stalls <= '0;
         stat_flushes <= '0;
-        stat_inst_retired <= '0;
+        stat_logical_inst_retired <= '0;
+        stat_physical_inst_retired <= '0;
 
         stat_btb_hits <= '0;
         stat_btb_misses <= '0;
@@ -131,7 +134,8 @@ always_ff @(posedge clk) begin
         if (branch_taken) stat_flushes <= stat_flushes + 32'd1;
         if (mbuf_out.valid) begin
             // Count instructions that successfully make it out of the pipeline
-            stat_inst_retired <= stat_inst_retired + 32'd1;
+            stat_logical_inst_retired <= stat_logical_inst_retired + 32'(mbuf_out.instructions_merged) + 32'd1;
+            stat_physical_inst_retired <= stat_physical_inst_retired + 32'd1;
         end
 
         // -----------------------------------------
@@ -162,7 +166,7 @@ always_ff @(posedge clk) begin
         // INDIRECT JUMPS (JALR)
         // * Evaluated in DEC
         // -----------------------------------------
-        if (fbuf_out.valid && fbuf_out.instruction.opcode == OP_JALR
+        if (fbuf_out.valid && fbuf_out.ins1.opcode == OP_JALR
             && !stall_now && !halt_now && !exec_branch_taken) begin
 
             stat_jalr_seen <= stat_jalr_seen + 32'd1;
@@ -189,13 +193,15 @@ assign out_stat_cycles = stat_cycles;
 
 localparam MEM_SIZE = 65536;
 
-(* nomem2reg *) logic [31:0] IMEM [MEM_SIZE];
+(* nomem2reg *) logic [31:0] IMEM1 [MEM_SIZE];
+(* nomem2reg *) logic [31:0] IMEM2 [MEM_SIZE];
 (* nomem2reg *) logic [31:0] DMEM [MEM_SIZE];
 
 // Load from Init ROM
 initial begin
-    $readmemh("../fib.hex", IMEM);
-    $readmemh("../fib.hex", DMEM);
+    $readmemh("../assembly/TwoSum.hex", IMEM1);
+    $readmemh("../assembly/TwoSum.hex", IMEM2);
+    $readmemh("../assembly/TwoSum.hex", DMEM);
 end
 
 btb_read_data btb_rdata;
@@ -236,15 +242,17 @@ ras ras0 (
 // *********** //
 
 // This wire is the output from imem
-instruction_data IR;
+instruction_data IR1, IR2;
 
-assign IR = IMEM[PC[15:0]];
+assign IR1 = IMEM1[PC[15:0]];
+assign IR2 = IMEM2[PC[15:0] + 1];
 
 fetch ftch(
     .clk(clk),
     .rst(rst),
     .PC(PC),
-    .IR(IR),
+    .IR1(IR1),
+    .IR2(IR2),
     .branch_taken(branch_taken),
     .stall_now(stall_now),
     .predict_taken(predict_taken),
@@ -276,15 +284,15 @@ lea_latch_t lea_latch;
 logic [31:0] current_lea_target;
 
 // Calculate LEA: pc_plus_1 + sign_extended_offset
-assign current_lea_target = fbuf_out.pc_plus_1 + { {12{fbuf_out.instruction.imm[19]}}, fbuf_out.instruction.imm };
+assign current_lea_target = fbuf_out.pc_plus_1 + { {12{fbuf_out.ins1.imm[19]}}, fbuf_out.ins1.imm };
 
 always_ff @(posedge clk) begin
     if (rst || branch_taken) begin
         lea_latch <= '0;
-    end else if (fbuf_out.instruction.opcode == OP_LEA && !stall_now && !halt_now) begin
+    end else if (fbuf_out.ins1.opcode == OP_LEA && !stall_now && !halt_now) begin
         // Save the freshly decoded LEA
         lea_latch.target <= current_lea_target[15:0];
-        lea_latch.dr     <= fbuf_out.instruction.rx; 
+        lea_latch.dr     <= fbuf_out.ins1.rx; 
         lea_latch.valid  <= 1'b1;
     end else if (dbuf_in.dr == lea_latch.dr && dbuf_in.dr != 4'd0) begin
         // Invalidate if some other instruction overwrites this register!
@@ -300,14 +308,14 @@ logic jalr_stall;
 logic [3:0] jalr_reg;
 
 // The register JALR needs is in rx (which becomes sr1 in Decode)
-assign jalr_reg = fbuf_out.instruction.rx;
+assign jalr_reg = fbuf_out.ins1.rx;
 
 always_comb begin
     // Default: read from the physical register file (dout1)
     jalr_target_fwd = dout1; 
     jalr_stall = 1'b0;
 
-    if (fbuf_out.instruction.opcode == OP_JALR) begin
+    if (fbuf_out.ins1.opcode == OP_JALR) begin
         // 1. Check Writeback Stage (mbuf_out)
         if ((mbuf_out.dr != 4'd0) && (mbuf_out.dr == jalr_reg)) begin
             jalr_target_fwd = mbuf_out.data;
@@ -369,8 +377,6 @@ dprf registers(
     .read_data1(dout1),
     .read_data2(dout2)
 );
-
-
 
 
 assign load_use_hazard = (dbuf_out.dr != 4'd0) && (dbuf_out.memop == MEM_READ)
@@ -469,6 +475,7 @@ always_comb begin
     mbuf_in.dr = ebuf_out.dr;
     mbuf_in.data = (ebuf_out.memop == MEM_READ) ? dmem_data_line : ebuf_out.data;
     mbuf_in.valid = ebuf_out.valid;
+    mbuf_in.instructions_merged = ebuf_out.instructions_merged;
 end
 
 always_ff @(posedge clk) begin

@@ -6,6 +6,7 @@ package types;
         ALU_ADD,
         ALU_SUB,
         ALU_NAND,
+        ALU_NEG,
         ALU_PASSA,
         ALU_PASSB,
         ALU_ADD1
@@ -38,6 +39,39 @@ package types;
         LOGIC_JMP_RES
     } logic_operation;
 
+    typedef enum logic [2:0] {
+        REG_IGNORE  = 3'b000,
+        REG_RX      = 3'b001, // ins1.rx
+        REG_RY      = 3'b010, // ins1.ry
+        REG_RZ      = 3'b011, // ins1.imm.rz
+        REG_INS2_RX = 3'b100, // ins2.rx
+        REG_INS2_RY = 3'b101, // ins2.ry 
+        REG_INS2_RZ = 3'b110  // ins2.imm.rz 
+    } reg_sel_t;
+
+    typedef struct packed {
+        // 8 bits
+        reg_sel_t       dr_sel;
+        reg_sel_t       sr1_sel;
+        reg_sel_t       sr2_sel;
+
+        // 1 bit
+        logic           imm_sel;
+
+        // 6 bits
+        alu_source      src1;
+        alu_source      src2;
+
+        // 8 bits
+        alu_operation   aluop;
+        cmp_operation   cmpop;
+        mem_operation   memop;
+        logic_operation logop;
+
+        // 3 bits
+        logic           sig_halt;
+        logic [1:0] instructions_merged;
+    } control_word_t;
 
     typedef enum logic [3:0] {
         OP_ADD  = 4'b0000,
@@ -66,7 +100,9 @@ package types;
 
     typedef struct packed {
         logic [31:0] pc_plus_1;
-        instruction_data instruction;
+        instruction_data ins1;
+        instruction_data ins2;
+        control_word_t cw;
         logic predicted_taken;
         logic [31:0] predict_target;
         logic btb_hit; // This is just for profiling
@@ -91,6 +127,7 @@ package types;
         logic predicted_taken;
         logic btb_hit; // Just for profiling
         logic valid; // Also for profiling
+        logic [1:0] instructions_merged;
     } dbuf_data;
 
 
@@ -104,12 +141,14 @@ package types;
         logic [3:0] dr;
         mem_operation memop; 
         logic valid;
+        logic [1:0] instructions_merged;
     } ebuf_data;
 
     typedef struct packed {
         logic [31:0] data;
         logic [3:0] dr;
         logic valid;
+        logic [1:0] instructions_merged;
     } mbuf_data;
     
     typedef struct packed {

@@ -65,6 +65,7 @@ always_comb begin
     // I don't care...
     ebuf.data = (dbuf.memop == MEM_WRITE) ? fwd_val1 : log_result;
     ebuf.valid = dbuf.valid;
+    ebuf.instructions_merged = dbuf.instructions_merged;
 
     // Initialize to 0 because split_wide will split this into multiple
     // registers
@@ -87,9 +88,13 @@ always_comb begin
     if (dbuf.logop == LOGIC_JMP_RES) begin
         // Populate BTB for JALR calls (since they could be offsets
         // and we just don't know
+        //
+        // Also, even though we're resolving JALR's in Decode,
+        // the reason why this is here is because we only have 1 write port
+        // to the BTB
         if (dbuf.dr != 4'd0) begin
             wdata.pc = dbuf.pc_plus_1 - 32'd1;
-            wdata.target = alu_val1;
+            wdata.target = fwd_val1;
             wdata.taken = 1'b1;
             wdata.write = 1'b1;
         end
