@@ -123,19 +123,17 @@ def generate_rom():
                 instructions_merged=1, imm_sel=1, dr_sel=REG_RX, sr1_sel=REG_RY, sr2_sel=REG_RZ,
                 src1=ALU_VAL1, src2=ALU_VAL2, aluop=ALU_NEG 
             )
-            """
-            # 2. STACK PUSH: ADDI $sp, $sp, -x + SW $reg, 0($sp)
-            # DISABLED BECAUSE I JUST REALIZED WE'RE WRITING TO 2 THINGS AT THE SAME TIME
-            # CAUSING BAAAD BUGS
-            if op1 == OP_ADDI and op2 == OP_SW and is_sp and raw_dr_sr1 and imm1_neg and imm2_zero:
-                # We use ins1's immediate for the SP offset, and we need ins2's RX for the store data
-                cw = build_cw(
-                    instructions_merged=1, imm_sel=0, dr_sel=REG_RX, sr1_sel=REG_RY, sr2_sel=REG_INS2_RX,
-                    src1=ALU_VAL1, src2=ALU_OFFSET, aluop=ALU_ADD, memop=MEM_WRITE
-                )
-            """
-            # 3. LEA + LW (Common in TwoSum.s for pointer dereferencing)
-            # LEA $t0, label + LW $a0, 0($t0)
+        # 2. STACK PUSH: ADDI $sp, $sp, -x + SW $reg, 0($sp)
+        # DISABLED BECAUSE I JUST REALIZED WE'RE WRITING TO 2 THINGS AT THE SAME TIME
+        # CAUSING BAAAD BUGS
+        if op1 == OP_ADDI and op2 == OP_SW and is_sp and raw_dr_sr1 and imm1_neg and imm2_zero:
+            # We use ins1's immediate for the SP offset, and we need ins2's RX for the store data
+            cw = build_cw(
+                instructions_merged=1, imm_sel=0, dr_sel=REG_RX, sr1_sel=REG_INS2_RX, sr2_sel=REG_RY,
+                src1=ALU_VAL2, src2=ALU_OFFSET, aluop=ALU_ADD, memop=MEM_WRITE
+            )
+        # 3. LEA + LW (Common in TwoSum.s for pointer dereferencing)
+        # LEA $t0, label + LW $a0, 0($t0)
         elif op1 == OP_LEA and op2 == OP_LW and raw_dr_sr1 and imm2_zero:
             # Calculate LEA address (PC + ins1.imm), route to memory, write result to ins2.rx
             cw = build_cw(
