@@ -199,9 +199,9 @@ localparam MEM_SIZE = 65536;
 
 // Load from Init ROM
 initial begin
-    $readmemh("../assembly/TwoSum.hex", IMEM1);
-    $readmemh("../assembly/TwoSum.hex", IMEM2);
-    $readmemh("../assembly/TwoSum.hex", DMEM);
+    $readmemh("../assembly/fib.hex", IMEM1);
+    $readmemh("../assembly/fib.hex", IMEM2);
+    $readmemh("../assembly/fib.hex", DMEM);
 end
 
 btb_read_data btb_rdata;
@@ -323,7 +323,7 @@ always_comb begin
 
         // 2. Check Memory Stage (ebuf_out)
         if ((ebuf_out.dr != 4'd0) && (ebuf_out.dr == jalr_reg)) begin
-            jalr_target_fwd = (ebuf_out.memop == MEM_READ) ? dmem_data_line : ebuf_out.data;
+            jalr_target_fwd = (ebuf_out.memop == MEM_READ) ? dmem_data_line : ebuf_out.reg_data;
         end
 
         // 3. Check our Special Early LEA Latch (Freshest data!)
@@ -433,10 +433,10 @@ always_comb begin
     // 2. Check Results of Execute Stage Second (newer data, so higher priority)
     // Overwrites any forwarding from the memory stage
     if ((ebuf_out.dr != 4'd0) && (ebuf_out.dr == dbuf_out.sr1)) begin
-        fwd_val1 = ebuf_out.data;
+        fwd_val1 = ebuf_out.reg_data;
     end
     if ((ebuf_out.dr != 4'd0) && (ebuf_out.dr == dbuf_out.sr2)) begin
-        fwd_val2 = ebuf_out.data;
+        fwd_val2 = ebuf_out.reg_data;
     end
 end
 
@@ -467,13 +467,13 @@ assign dmem_data_line = DMEM[dmem_addr_line];
 
 always_ff @(posedge clk) begin
     if (ebuf_out.memop == MEM_WRITE) begin
-        DMEM[dmem_addr_line] <= ebuf_out.data;
+        DMEM[dmem_addr_line] <= ebuf_out.mem_data;
     end
 end
 
 always_comb begin
     mbuf_in.dr = ebuf_out.dr;
-    mbuf_in.data = (ebuf_out.memop == MEM_READ) ? dmem_data_line : ebuf_out.data;
+    mbuf_in.data = (ebuf_out.memop == MEM_READ) ? dmem_data_line : ebuf_out.reg_data;
     mbuf_in.valid = ebuf_out.valid;
     mbuf_in.instructions_merged = ebuf_out.instructions_merged;
 end

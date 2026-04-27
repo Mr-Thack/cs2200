@@ -137,7 +137,8 @@ package types;
     // Both would work, and I don't think there's a major improvement either way
     typedef struct packed {
         logic [31:0] address;
-        logic [31:0] data;
+        logic [31:0] mem_data;
+        logic [31:0] reg_data;
         logic [3:0] dr;
         mem_operation memop; 
         logic valid;
