@@ -197,11 +197,17 @@ localparam MEM_SIZE = 65536;
 (* nomem2reg *) logic [31:0] IMEM2 [MEM_SIZE];
 (* nomem2reg *) logic [31:0] DMEM [MEM_SIZE];
 
+logic [1023:0] mem_file_name;
+
 // Load from Init ROM
 initial begin
-    $readmemh("../assembly/fib.hex", IMEM1);
-    $readmemh("../assembly/fib.hex", IMEM2);
-    $readmemh("../assembly/fib.hex", DMEM);
+    // Check if a +MEM_FILE argument was passed to the simulator
+    if (!$value$plusargs("MEM_FILE=%s", mem_file_name)) begin
+        mem_file_name = "../assembly/fib.hex";
+    end
+    $readmemh(mem_file_name, IMEM1);
+    $readmemh(mem_file_name, IMEM2);
+    $readmemh(mem_file_name, DMEM);
 end
 
 btb_read_data btb_rdata;
