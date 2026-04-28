@@ -58,3 +58,12 @@ I hadn't ever found the original baseline. But, I did now!
 POW: 8129, FIB: 32312, TWO_SUM: 12314
 And the number of instructions:
 POW: 1223, FIB: 5150, TWO_SUM: 1882 
+
+Sixth Attempt:
+I implemented a very basic 2X scalar pipeline. I mean, we're just doing macro op fusion.
+We're merging every 2 if it's possible. I also hardcoded 3 quick and easy mergers I found...
+So, not complete yet, but it was helpful:
+POW: 1243, FIB: 4778, TWO_SUM: 2034  
+Keep in mind that this is technically superscalar since our average CPI was 0.97672...
+(FIB is the only program that was actually superscalar...)
+But, we can't actually run it in the autograder because it's only populating one of my two RAM's...

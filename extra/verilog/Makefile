@@ -73,7 +73,7 @@ stats: $(V_SRCS) $(IV_CELLS) $(TB)
 	done
 	@echo "======================="
 	@echo "    OVERALL AVERAGE"
-	@awk '/Cycles:/ {c+=$$2} /Instructions:/ {i+=$$2} END {if(i>0) printf "   Global CPI: %.3f\n", c/i}' build/run_stats.txt
+	@awk '/Cycles:/ {c+=$$2} /Instructions:/ {i+=$$2} END {if(i>0) printf "  Global CPI: %.5f\n", c/i}' build/run_stats.txt
 	@awk 'BEGIN {b_tot=8129+32312+12314} /Cycles:/ {c+=$$2} END {if(c>0) { speedup=b_tot/c; pct=(speedup-1)*100; printf "Speedup: %.2fx (+%.1f%%)\n", speedup, pct }}' build/run_stats.txt
 	@echo "======================="
 
