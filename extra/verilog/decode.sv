@@ -17,6 +17,7 @@ module decode(
     input [31:0] dout1,
     input [31:0] dout2,
 
+
     input [31:0] jalr_target_fwd,
 
     output logic ras_push,
@@ -129,27 +130,20 @@ always_comb begin
 
     dbuf.val1 = dout1;
     dbuf.sr1 = sr1;
-    dbuf.src1 = src1;
 
     dbuf.val2 = dout2;
     dbuf.sr2 = sr2;
-    dbuf.src2 = src2;
 
     imm_wire = cw.imm_sel ? ins2.imm : ins1.imm;
 
     dbuf.offset = { {12{imm_wire[19]}}, imm_wire };
-
-    dbuf.aluop = cw.aluop;
-    dbuf.cmpop = cw.cmpop;
-    dbuf.memop = cw.memop;
-    dbuf.logop = cw.logop;
 
     dbuf.predicted_taken = fbuf.predicted_taken;
 
     dbuf.btb_hit = fbuf.btb_hit;
     dbuf.valid = fbuf.valid; 
 
-    dbuf.instructions_merged = cw.instructions_merged; 
+    dbuf.cw = cw;
 end
 
 endmodule

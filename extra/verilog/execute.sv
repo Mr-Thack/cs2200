@@ -1,13 +1,18 @@
 module execute(
     input dbuf_data dbuf,
+
     input logic [31:0] fwd_val1,
     input logic [31:0] fwd_val2,
 
     output logic branch_taken,
     output logic [31:0] branch_target,
     output btb_write_data wdata,
+
     output ebuf_data ebuf
 );
+
+control_word_t cw;
+assign cw = dbuf.cw;
 
 logic [31:0] alu_val1;
 logic [31:0] alu_val2;
@@ -15,14 +20,14 @@ logic [31:0] alu_result;
 logic cmp_result;
 
 always_comb begin
-    unique case(dbuf.src1)
+    unique case(cw.src1)
        ALU_VAL1:    alu_val1 = fwd_val1; 
        ALU_VAL2:    alu_val1 = fwd_val2; 
        ALU_OFFSET:  alu_val1 = dbuf.offset; 
        ALU_PC:      alu_val1 = dbuf.pc_plus_1; 
     endcase
     
-    unique case(dbuf.src2)
+    unique case(cw.src2)
         ALU_VAL1:    alu_val2 = fwd_val1; 
         ALU_VAL2:    alu_val2 = fwd_val2; 
         ALU_OFFSET:  alu_val2 = dbuf.offset; 
@@ -34,13 +39,13 @@ end
 alu alu0 (
     .a(alu_val1),
     .b(alu_val2),
-    .op(dbuf.aluop),
+    .op(cw.aluop),
     .out(alu_result)
 );
 
 cmp cmp0 (
     .in(alu_result),
-    .op(dbuf.cmpop),
+    .op(cw.cmpop),
     .out(cmp_result)
 );
 
@@ -48,7 +53,7 @@ log log0 (
     .in(alu_result),
     .cmp(cmp_result),
     .predicted_taken(dbuf.predicted_taken),
-    .op(dbuf.logop),
+    .op(cw.logop),
     .pc(dbuf.pc_plus_1),
     .offset(dbuf.offset),
     .branch_taken(branch_taken),
@@ -57,12 +62,12 @@ log log0 (
 
 always_comb begin
     ebuf.dr = dbuf.dr;
-    ebuf.memop = dbuf.memop;
-    ebuf.address = (dbuf.memop != MEM_IGNORE) ? alu_result : '0;
+    ebuf.memop = cw.memop;
+    ebuf.address = alu_result;
     ebuf.mem_data = fwd_val1;
     ebuf.reg_data = alu_result;
     ebuf.valid = dbuf.valid;
-    ebuf.instructions_merged = dbuf.instructions_merged;
+    ebuf.instructions_merged = cw.instructions_merged;
 
     // Initialize to 0 because split_wide will split this into multiple
     // registers
@@ -71,7 +76,7 @@ always_comb begin
     wdata.taken = '0;
     wdata.write = '0;
 
-    if (dbuf.logop == LOGIC_JMP_OFFSET) begin
+    if (cw.logop == LOGIC_JMP_OFFSET) begin
         // Only populate BTB with non-trivial JMPs
         // since trivial ones are now evaluated in Fetch and Decode
         if (dbuf.sr1 != dbuf.sr2) begin
@@ -82,7 +87,7 @@ always_comb begin
         end
     end
 
-    if (dbuf.logop == LOGIC_JMP_RES) begin
+    if (cw.logop == LOGIC_JMP_RES) begin
         // Populate BTB for JALR calls (since they could be offsets
         // and we just don't know
         //

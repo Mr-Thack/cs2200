@@ -142,7 +142,7 @@ always_ff @(posedge clk) begin
         // CONDITIONAL BRANCHES (BEQ, BGT)
         // * Evaluated in EXEC, so not fake JMP's
         // -----------------------------------------
-        if (dbuf_out.logop == LOGIC_JMP_OFFSET) begin
+        if (dbuf_out.cw.logop == LOGIC_JMP_OFFSET) begin
             stat_branches_seen <= stat_branches_seen + 32'd1;
 
             // Track BTB hit rate
@@ -360,7 +360,7 @@ dprf registers(
 );
 
 
-assign load_use_hazard = (dbuf_out.dr != 4'd0) && (dbuf_out.memop == MEM_READ)
+assign load_use_hazard = (dbuf_out.dr != 4'd0) && (dbuf_out.cw.memop == MEM_READ)
                     && ((dbuf_out.dr == dbuf_in.sr1) || (dbuf_out.dr == dbuf_in.sr2));
 
 assign stall_now = load_use_hazard || jalr_stall;

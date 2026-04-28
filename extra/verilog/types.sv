@@ -49,8 +49,9 @@ package types;
         REG_INS2_RZ = 3'b110  // ins2.imm.rz 
     } reg_sel_t;
 
+    // This is currently 28 bits
     typedef struct packed {
-        // 8 bits
+        // 9 bits
         reg_sel_t       dr_sel;
         reg_sel_t       sr1_sel;
         reg_sel_t       sr2_sel;
@@ -62,7 +63,7 @@ package types;
         alu_source      src1;
         alu_source      src2;
 
-        // 8 bits
+        // 9 bits
         alu_operation   aluop;
         cmp_operation   cmpop;
         mem_operation   memop;
@@ -118,16 +119,10 @@ package types;
         logic [3:0] dr;
         logic [3:0] sr1;
         logic [3:0] sr2;
-        alu_source src1;
-        alu_source src2;
-        alu_operation aluop;
-        cmp_operation cmpop;
-        logic_operation logop;
-        mem_operation memop;
+        control_word_t cw;
         logic predicted_taken;
         logic btb_hit; // Just for profiling
         logic valid; // Also for profiling
-        logic [1:0] instructions_merged;
     } dbuf_data;
 
 
