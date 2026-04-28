@@ -2203,8 +2203,8 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str, OPTIMIZE:
 if __name__ == "__main__":
     compiler = CircuitBuilder()
 
-    OPTIMIZE = False 
-    OPTIMIZE_TUNNELS = False
+    OPTIMIZE = True 
+    OPTIMIZE_TUNNELS = True
     # No cli flag yet...
 
     # 1. Parse the Silicon Netlist into the Compiler Memory
