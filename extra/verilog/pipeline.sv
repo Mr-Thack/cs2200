@@ -191,11 +191,7 @@ assign out_stat_cycles = stat_cycles;
 // INLINED MEMORY ARRAYS //
 // ********************* //
 
-localparam MEM_SIZE = 65536;
-
-(* nomem2reg *) reg [31:0] IMEM1 [MEM_SIZE];
-(* nomem2reg *) reg [31:0] IMEM2 [MEM_SIZE];
-(* nomem2reg *) reg [31:0] DMEM [MEM_SIZE];
+(* nomem2reg *) reg [31:0] DMEM [65536];
 
 btb_read_data btb_rdata;
 btb_write_data btb_wdata;
@@ -234,18 +230,10 @@ ras ras0 (
 // FETCH STAGE //
 // *********** //
 
-// This wire is the output from imem
-instruction_data IR1, IR2;
-
-assign IR1 = IMEM1[PC[15:0]];
-assign IR2 = IMEM2[PC[15:0] + 1];
-
 fetch ftch(
     .clk(clk),
     .rst(rst),
     .PC(PC),
-    .IR1(IR1),
-    .IR2(IR2),
     .branch_taken(branch_taken),
     .stall_now(stall_now),
     .predict_taken(predict_taken),

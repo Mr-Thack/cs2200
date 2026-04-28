@@ -1,7 +1,7 @@
 # --- Variables ---
 TYPES = types.sv
 SRC = pipeline.sv
-COMPONENTS = btb.sv ras.sv dprf.sv fusion.sv fetch.sv decode.sv alu.sv cmp.sv log.sv execute.sv
+COMPONENTS = btb.sv ras.sv dprf.sv bank.sv mmu.sv fusion.sv fetch.sv decode.sv alu.sv cmp.sv log.sv execute.sv
 TB = test.sv
 
 CS_CELLS = ccellscs.sv 

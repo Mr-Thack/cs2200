@@ -3,8 +3,6 @@ module fetch(
     input logic rst,
 
     input logic [31:0] PC,
-    input instruction_data IR1,
-    input instruction_data IR2,
     
     input logic branch_taken,
     input logic stall_now,
@@ -21,6 +19,24 @@ module fetch(
     output logic ras_pop
 );
 
+instruction_data IR1, IR2, IR3, IR4;
+logic [1:0] extras;
+
+mmu baby_mmu (
+    .clk(clk),
+    .rst(rst),
+
+    .PC(PC[15:0]),
+
+    .inst0(IR1),
+    .inst1(IR2),
+    .inst2(IR3),
+    .inst3(IR4),
+    
+    .extra_valid(extras)
+);
+
+
 
 logic [31:0] ext_imm;
 assign ext_imm = {{12{IR1.imm[19]}}, IR1.imm};
@@ -30,6 +46,7 @@ control_word_t cw;
 fusion fuse(
     .ins1(IR1),
     .ins2(IR2),
+    .extras(extras),
     .cw(cw)
 );
 

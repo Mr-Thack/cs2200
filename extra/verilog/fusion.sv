@@ -1,6 +1,10 @@
 module fusion(
     input instruction_data ins1,
     input instruction_data ins2,
+    input instruction_data ins3,
+    input instruction_data ins4,
+
+    input [1:0] extras,
 
     output control_word_t cw
 );
@@ -150,8 +154,8 @@ assign cw_merged = merged_rom[merge_index];
 
 // If no merge available, go back to single:
 always_comb begin
-    cw = (cw_merged == '0) ? cw_single : cw_merged;
-    cw.instructions_merged = (cw_merged == '0) ? 2'd0 : 2'd1;
+    cw = (cw_merged == '0 || extras == '0) ? cw_single : cw_merged;
+    cw.instructions_merged = (cw_merged == '0 || extras == '0) ? 2'd0 : 2'd1;
 end
 
 endmodule

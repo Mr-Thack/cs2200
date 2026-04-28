@@ -20,8 +20,7 @@ module test;
             mem_file_name = "../assembly/fib.hex";
         end
 
-        $readmemh(mem_file_name, dut.IMEM1);
-        $readmemh(mem_file_name, dut.IMEM2);
+        $readmemh(mem_file_name, dut.ftch.baby_mmu.IMEM);
         $readmemh(mem_file_name, dut.DMEM);
 
         // Record here
