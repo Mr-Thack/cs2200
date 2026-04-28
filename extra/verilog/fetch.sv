@@ -3,6 +3,7 @@ module fetch(
     input logic rst,
 
     input logic [31:0] PC,
+    input logic [31:0] imem_out,
     
     input logic branch_taken,
     input logic stall_now,
@@ -20,6 +21,7 @@ module fetch(
 );
 
 instruction_data IR1, IR2, IR3, IR4;
+assign IR1 = imem_out;
 logic [1:0] extras;
 
 mmu baby_mmu (
@@ -27,8 +29,8 @@ mmu baby_mmu (
     .rst(rst),
 
     .PC(PC[15:0]),
+    .mem_out(imem_out),
 
-    .inst0(IR1),
     .inst1(IR2),
     .inst2(IR3),
     .inst3(IR4),

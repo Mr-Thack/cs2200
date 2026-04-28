@@ -191,7 +191,12 @@ assign out_stat_cycles = stat_cycles;
 // INLINED MEMORY ARRAYS //
 // ********************* //
 
+(* nomem2reg *) reg [31:0] IMEM [65536];
 (* nomem2reg *) reg [31:0] DMEM [65536];
+
+logic [31:0] imem_out;
+
+assign imem_out = IMEM[PC[15:0]];
 
 btb_read_data btb_rdata;
 btb_write_data btb_wdata;
@@ -234,6 +239,7 @@ fetch ftch(
     .clk(clk),
     .rst(rst),
     .PC(PC),
+    .imem_out(imem_out),
     .branch_taken(branch_taken),
     .stall_now(stall_now),
     .predict_taken(predict_taken),

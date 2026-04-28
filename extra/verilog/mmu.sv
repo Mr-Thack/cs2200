@@ -3,9 +3,9 @@ module mmu (
     input logic rst,
 
     input logic [15:0] PC,
+    input logic [31:0] mem_out,
 
     // Only inst0 is guaranteed valid
-    output logic [31:0] inst0,
     output logic [31:0] inst1,
     output logic [31:0] inst2,
     output logic [31:0] inst3,
@@ -15,23 +15,16 @@ module mmu (
 );
 
 // ==========================================
-// MAIN I-MEM
-// ==========================================
-(* nomem2reg *) reg [31:0] IMEM [65536];
-
-assign inst0 = IMEM[PC];
-
-// ==========================================
 // BANK INTERCONNECTS
 // ==========================================
 logic [31:0] bank_dout [4];
 logic bank_valid [4];
 
 // Literal instantiations to bypass CircuitSim parameter limitations
-bank bank0 (.clk(clk), .rst(rst), .bank_index(2'd0), .addr(PC), .din(inst0), .dout(bank_dout[0]), .is_valid(bank_valid[0]));
-bank bank1 (.clk(clk), .rst(rst), .bank_index(2'd1), .addr(PC), .din(inst0), .dout(bank_dout[1]), .is_valid(bank_valid[1]));
-bank bank2 (.clk(clk), .rst(rst), .bank_index(2'd2), .addr(PC), .din(inst0), .dout(bank_dout[2]), .is_valid(bank_valid[2]));
-bank bank3 (.clk(clk), .rst(rst), .bank_index(2'd3), .addr(PC), .din(inst0), .dout(bank_dout[3]), .is_valid(bank_valid[3]));
+bank bank0 (.clk(clk), .rst(rst), .bank_index(2'd0), .addr(PC), .din(mem_out), .dout(bank_dout[0]), .is_valid(bank_valid[0]));
+bank bank1 (.clk(clk), .rst(rst), .bank_index(2'd1), .addr(PC), .din(mem_out), .dout(bank_dout[1]), .is_valid(bank_valid[1]));
+bank bank2 (.clk(clk), .rst(rst), .bank_index(2'd2), .addr(PC), .din(mem_out), .dout(bank_dout[2]), .is_valid(bank_valid[2]));
+bank bank3 (.clk(clk), .rst(rst), .bank_index(2'd3), .addr(PC), .din(mem_out), .dout(bank_dout[3]), .is_valid(bank_valid[3]));
 
 // ==========================================
 // ASSEMBLE OUTPUT BUNDLE
