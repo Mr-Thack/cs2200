@@ -857,9 +857,32 @@ def build_master_splitters(compiler: CircuitBuilder, grid, module_data: dict, bi
     all_reqs = []
     for port in module_data.get("ports", {}).values():
         all_reqs.append(port.get("bits", []))
+
     for cell in module_data.get("cells", {}).values():
-        for bits in cell.get("connections", {}).values():
+        conns = cell.get("connections", {})
+        for bits in conns.values():
             all_reqs.append(bits)
+
+        c_type = cell.get("type")
+
+        if c_type == "$pmux":
+            b_flat = conns.get("B", [])
+            width = len(conns.get("Y", []))
+            s_width = len(conns.get("S", []))
+
+            if width > 0:
+                for i in range(s_width):
+                    all_reqs.append(b_flat[i * width : (i + 1) * width])
+
+        elif c_type == "$cs_folded_mux":
+            a_flat = conns.get("A", [])
+            width = len(conns.get("Y", []))
+            sel_bits = len(conns.get("S", []))
+            num_inputs = 2 ** sel_bits
+
+            if width > 0:
+                for i in range(num_inputs):
+                    all_reqs.append(a_flat[i * width : (i + 1) * width])
 
     # 2. Break requests down into contiguous chunks
     for raw_bits in all_reqs:
@@ -1003,11 +1026,22 @@ def resolve_bus(compiler: CircuitBuilder, grid, raw_bits: List[int], current_mod
 
                     # Gather the Master Splitter segments that make up this specific chunk
                     while curr_idx < end_idx:
+                        prev_idx = curr_idx
+
                         for (s_start, s_end), wire in compiler.parent_segments[parent_tuple].items():
                             if s_start == curr_idx:
                                 sub_segments.append(wire)
                                 curr_idx = s_end
                                 break
+
+                        if prev_idx == curr_idx:
+                            raise RuntimeError(
+                                f"INFINITE LOOP DETECTED!\n"
+                                f"Tried to resolve slice {start_idx} to {end_idx} for bus.\n"
+                                f"Could not find a splitter segment starting at index {curr_idx}.\n"
+                                f"Available segments: {list(compiler.parent_segments[parent_tuple].keys())}\n"
+                                f"Raw Bits Requested: {chunk}"
+                            )
 
                     if len(sub_segments) == 1:
                         chunk_wires.append(sub_segments[0])
@@ -1994,13 +2028,12 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str, OPTIMIZE:
                 rd_data_flat = conns.get("RD_DATA", [])
                 wr_en_array = conns.get("WR_EN", [])
 
-                match clean_label:
-                    case "IMEM":
-                        final_label = "I-MEM"
-                    case "DMEM":
-                        final_label = "D-MEM"
-                    case _:
-                        final_label = clean_label
+                if clean_label.startswith("IMEM"):
+                    final_label = "I-MEM"
+                elif clean_label == "DMEM":
+                    final_label = "D-MEM"
+                else:
+                    final_label = clean_label
 
                 is_rom = (not wr_en_array or all((b == '0' or b == 0) for b in wr_en_array)) and not final_label == "I-MEM"
 
@@ -2170,7 +2203,7 @@ def parse_yosys_netlist(compiler: CircuitBuilder, json_file_path: str, OPTIMIZE:
 if __name__ == "__main__":
     compiler = CircuitBuilder()
 
-    OPTIMIZE = True 
+    OPTIMIZE = False 
     OPTIMIZE_TUNNELS = False
     # No cli flag yet...
 

@@ -1,6 +1,4 @@
 import math
-
-# generate_merge_rom.py
 # Generates a 65536-entry hex file for the LC-5200b Superscalar Merge ROM
 
 # --- ENUMS (Mapped directly to your SystemVerilog types) ---

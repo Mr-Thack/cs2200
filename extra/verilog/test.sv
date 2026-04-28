@@ -2,7 +2,10 @@ module test;
     logic clk;
     logic rst;
 
-    // pipeline #( .MEM_SIZE(256) ) dut (
+    logic [1023:0] mem_file_name;
+
+
+
     pipeline dut (
         .clk(clk),
         .rst(rst)
@@ -12,6 +15,15 @@ module test;
     always #5 clk = ~clk;
 
     initial begin
+        // Prepare Processor First
+        if (!$value$plusargs("MEM_FILE=%s", mem_file_name)) begin
+            mem_file_name = "../assembly/fib.hex";
+        end
+
+        $readmemh(mem_file_name, dut.IMEM1);
+        $readmemh(mem_file_name, dut.IMEM2);
+        $readmemh(mem_file_name, dut.DMEM);
+
         // Record here
         $dumpfile("build/waves.vcd"); 
         $dumpvars(0, test);
@@ -22,6 +34,7 @@ module test;
         #30;
         rst = 1'b0;
 
+        // Actually finish and record required clock cycles or just die
         fork
             begin
                 wait(dut.halt_flag == 1'b1);
