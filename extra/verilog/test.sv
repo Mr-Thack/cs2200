@@ -17,7 +17,7 @@ module test;
     initial begin
         // Prepare Processor First
         if (!$value$plusargs("MEM_FILE=%s", mem_file_name)) begin
-            mem_file_name = "../assembly/fib.hex";
+            mem_file_name = "../assembly/pow.hex";
         end
 
         $readmemh(mem_file_name, dut.IMEM);

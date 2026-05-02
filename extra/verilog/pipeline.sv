@@ -196,7 +196,9 @@ assign out_stat_cycles = stat_cycles;
 
 logic [31:0] imem_out;
 
-assign imem_out = IMEM[PC[15:0]];
+logic [15:0] imem_addr;
+
+assign imem_out = IMEM[imem_addr];
 
 btb_read_data btb_rdata;
 btb_write_data btb_wdata;
@@ -239,6 +241,7 @@ fetch ftch(
     .clk(clk),
     .rst(rst),
     .PC(PC),
+    .imem_addr(imem_addr),
     .imem_out(imem_out),
     .branch_taken(branch_taken),
     .stall_now(stall_now),

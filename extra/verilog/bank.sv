@@ -9,20 +9,18 @@ module bank (
     input logic [31:0] din,
     output logic [31:0] dout,
 
-    output logic is_valid
+    output logic is_valid,
+    input logic is_write
 );
 
 // 16384 words per bank
 (* nomem2reg *) logic [31:0] ram [16384];
 
-logic is_write;
-assign is_write = (addr[1:0] == bank_index);
-
 logic [13:0] index;
 assign index = addr[15:2];
 
 logic [31:0] read_data;
-assign read_data = ram[index];
+assign read_data = is_write ? '0 : ram[index];
 
 always_comb begin
     if (is_write) begin

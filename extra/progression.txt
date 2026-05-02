@@ -1,3 +1,22 @@
+This is the history of all my attempts at this.
+I do not have time anymore to write a full report.
+I spent too much time helping others fix their pipelines.
+Besides, I've already got the record; there's no real need to push it.
+But, basically, most of my time has been spent fighting CircuitSim.
+Not fun, but it is what it is. I hope whoever is here enjoys reading this!
+Feel free to email me if anything's off!
+Oh, and here's my Git Repo if you wanna see the code:
+https://github.com/Mr-Thack/cs2200/extra
+
+Also, I had originally intended to make this 4X scalar using Macro Op Merging
+and a second EXEC stage or a UVW pipeline.
+Also, I think we can solve the bandwidth issue by having an L1 Data Cache.
+This way, we can perform multiple reads and writes (make fib happy!)
+
+Oh, actually, I might just attempt to clean up the code myself afterwards.
+Like, for an hour or two after the deadline and see just how much we can push it.
+
+
 First Attempt:
 Traditional 5-Stage Pipelined, Monolithic, Default Branch Not Taken Policy
 POW: 1809, FIB: 6214, TWO_SUM: 2752
@@ -67,3 +86,23 @@ POW: 1243, FIB: 4778, TWO_SUM: 2034
 Keep in mind that this is technically superscalar since our average CPI was 0.97672...
 (FIB is the only program that was actually superscalar...)
 But, we can't actually run it in the autograder because it's only populating one of my two RAM's...
+
+Seventh (technically 6.1) Attempt:
+I realized the autograder can only fill up one of our memories (so only 1 copy of I-MEM).
+And since each RAM cell in CircuitSim is single ported, we would be screwed.
+BUT, I made a 4-way L1 Cache that can unconditionally sends our PC+1 to I-MEM,
+unconditionally copies to L1, and then reads the other 3 addresses.
+This cache is only for the Instruction Memory, but it helps a whole lot!
+We technically lost superscalar performance, but at least we run properly on the autograder!
+POW: 1255, FIB: 4785, TWO_SUM: 2236
+Hmm... something must be wrong. TWO_SUM shouldn't have gone up that much.
+Oh well! That's a later me issue.
+
+Seventh.1 Attempt:
+Fixed L1 Instruction Cache!!! So, actually, you see, not doing a Stall-Fill was part of the issue,
+but the rest of it came from an ugly bug where I didn't wrap around.
+Say we're at PC=3 (we want PC=4,5,6 next).
+That means we're pulling from Bank 4's Address 0, but Banks 1, 2, and 3's Address 1's.
+So, we can't feed the same address into all of them. The MMU has to do something.
+POW: 1255, FIB: 4785, TWO_SUM: 2076 
+
