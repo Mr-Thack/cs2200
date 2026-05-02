@@ -6,7 +6,7 @@ But, basically, most of my time has been spent fighting CircuitSim.
 Not fun, but it is what it is. I hope whoever is here enjoys reading this!
 Feel free to email me if anything's off!
 Oh, and here's my Git Repo if you wanna see the code:
-https://github.com/Mr-Thack/cs2200/extra
+https://github.com/Mr-Thack/cs2200/tree/master/extra
 
 Also, I had originally intended to make this 4X scalar using Macro Op Merging
 and a second EXEC stage or a UVW pipeline.
