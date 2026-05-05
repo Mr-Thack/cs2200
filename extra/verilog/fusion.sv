@@ -26,16 +26,22 @@ initial begin
     // 1. Clear everything to safe defaults
     for (int i = 0; i < 16; i++) begin
         single_rom[i].dr_sel   = REG_IGNORE;
+
         single_rom[i].sr1_sel  = REG_IGNORE;
         single_rom[i].sr2_sel  = REG_IGNORE;
+
         single_rom[i].imm_sel  = 1'b0;
 
         single_rom[i].src1     = ALU_VAL1;
         single_rom[i].src2     = ALU_VAL2;
+
+        single_rom[i].mem_write_source = 1'b0;
+
         single_rom[i].aluop    = ALU_IGNORE;
         single_rom[i].cmpop    = CMP_IGNORE;
         single_rom[i].memop    = MEM_IGNORE;
         single_rom[i].logop    = LOGIC_IGNORE;
+
         single_rom[i].sig_halt = 1'b0;
         single_rom[i].instructions_merged = 1'b0;
     end

@@ -64,7 +64,7 @@ always_comb begin
     ebuf.dr = dbuf.dr;
     ebuf.memop = cw.memop;
     ebuf.address = alu_result;
-    ebuf.mem_data = fwd_val1;
+    ebuf.mem_data = cw.mem_write_source ? alu_result : fwd_val1;
     ebuf.reg_data = alu_result;
     ebuf.valid = dbuf.valid;
     ebuf.instructions_merged = cw.instructions_merged;

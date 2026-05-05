@@ -26,14 +26,14 @@ package types;
         MEM_WRITE
     } mem_operation;
 
-    typedef enum logic [2:0] {
+    typedef enum logic [1:0] {
         CMP_IGNORE,
         CMP_LT,
         CMP_EQ,
         CMP_GT
     } cmp_operation;
 
-    typedef enum logic [2:0] {
+    typedef enum logic [1:0] {
         LOGIC_IGNORE,
         LOGIC_JMP_OFFSET,
         LOGIC_JMP_RES
@@ -46,30 +46,42 @@ package types;
         REG_RZ      = 3'b011, // ins1.imm.rz
         REG_INS2_RX = 3'b100, // ins2.rx
         REG_INS2_RY = 3'b101, // ins2.ry 
-        REG_INS2_RZ = 3'b110  // ins2.imm.rz 
+        REG_INS2_RZ = 3'b110, // ins2.imm.rz 
+        REG_PC_P1   = 3'b111  // Cur PC+1
     } reg_sel_t;
 
-    // This is currently 28 bits
+    // This is currently 29 bits
     typedef struct packed {
         // 9 bits
+        // To select what we're reading
+        // (or muxing) out of the DPRF
         reg_sel_t       dr_sel;
         reg_sel_t       sr1_sel;
         reg_sel_t       sr2_sel;
 
         // 1 bit
+        // MUXes between ins1.imm and ins2.imm
         logic           imm_sel;
 
-        // 6 bits
+        // 4 bits
+        // What to feed into ports 1 and 2
         alu_source      src1;
         alu_source      src2;
 
+        // 1 bit
+        // MUXes between sr1 and alu_result
+        logic           mem_write_source;
+
         // 9 bits
-        alu_operation   aluop;
-        cmp_operation   cmpop;
-        mem_operation   memop;
-        logic_operation logop;
+        alu_operation   aluop; // 3
+        cmp_operation   cmpop; // 2
+        mem_operation   memop; // 2
+        logic_operation logop; // 2
 
         // 3 bits
+        // Whether this is HALT
+        // And the count of how many merged
+        // (0 = 0 instruction merged, or exec only 1)
         logic           sig_halt;
         logic [1:0] instructions_merged;
     } control_word_t;

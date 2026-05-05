@@ -74,6 +74,7 @@ always_comb begin
         REG_INS2_RX:  dr = ins2.rx;
         REG_INS2_RY:  dr = ins2.ry;
         REG_INS2_RZ:  dr = ins2.imm.rz;
+        REG_PC_P1:    dr = 'X; // This is an illegal operation 
         default: dr = '0;
     endcase
 
@@ -85,6 +86,7 @@ always_comb begin
         REG_INS2_RX:  sr1 = ins2.rx;
         REG_INS2_RY:  sr1 = ins2.ry;
         REG_INS2_RZ:  sr1 = ins2.imm.rz;
+        REG_PC_P1:    sr1 = fbuf.pc_plus_1; 
         default: sr1 = '0;
     endcase
 
@@ -96,6 +98,7 @@ always_comb begin
         REG_INS2_RX:  sr2 = ins2.rx;
         REG_INS2_RY:  sr2 = ins2.ry;
         REG_INS2_RZ:  sr2 = ins2.imm.rz;
+        REG_PC_P1:    sr2 = fbuf.pc_plus_1; 
         default: sr2 = '0;
     endcase
    

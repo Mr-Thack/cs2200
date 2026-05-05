@@ -68,23 +68,31 @@ def write_verilog_hex(filename, data_list, bit_width):
     print(f"{filename} generated successfully with {bit_width}-bit formatting!")
 
 def build_cw(instructions_merged=0, imm_sel=0, dr_sel=REG_IGNORE, sr1_sel=REG_IGNORE, 
-             sr2_sel=REG_IGNORE, src1=ALU_VAL1, src2=ALU_VAL2, aluop=ALU_IGNORE, 
-             cmpop=CMP_IGNORE, memop=MEM_IGNORE, logop=LOGIC_IGNORE, sig_halt=0):
+             sr2_sel=REG_IGNORE, src1=ALU_VAL1, src2=ALU_VAL2, mem_write_source=0,
+             aluop=ALU_IGNORE, cmpop=CMP_IGNORE, memop=MEM_IGNORE, logop=LOGIC_IGNORE,
+             sig_halt=0):
     """Packs the control signals into a 28-bit integer."""
     # MAKE SURE TO MATCH THE CONTROL WORD TYPE IN TYPES.SV
     packer = BitPacker()
 
     # Read exactly top-to-bottom as defined in types.sv
     packer.add(dr_sel, 3)
+
     packer.add(sr1_sel, 3)
     packer.add(sr2_sel, 3)
+
     packer.add(imm_sel, 1)
+
     packer.add(src1, 2)
     packer.add(src2, 2)
+
+    packer.add(mem_write_source, 1)
+
     packer.add(aluop, 3)
-    packer.add(cmpop, 3)
+    packer.add(cmpop, 2)
     packer.add(memop, 2)
-    packer.add(logop, 3)
+    packer.add(logop, 2)
+
     packer.add(sig_halt, 1)
     packer.add(instructions_merged, 2)
 
@@ -143,7 +151,7 @@ def generate_rom():
 
 
     # Write to a CircuitSim compatible format
-    write_verilog_hex("merged_rom.hex", rom_data, bit_width=28)
+    write_verilog_hex("merged_rom.hex", rom_data, bit_width=27)
 
 if __name__ == "__main__":
     generate_rom()
