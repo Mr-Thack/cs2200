@@ -59,6 +59,8 @@ stats: $(V_SRCS) $(IV_CELLS) $(TB)
 		cat build/$$prog_stats.tmp | tee -a build/run_stats.txt; \
 		\
 		CYCLES=$$(grep "Cycles:" build/$$prog_stats.tmp | awk '{print $$2}'); \
+		INSTR=$$(grep "Instructions:" build/$$prog_stats.tmp | awk '{print $$2}'); \
+		CPI=$$(grep "CPI:" build/$$prog_stats.tmp | awk '{print $$2}'); \
 		\
 		if [ "$$prog" = "pow" ]; then BASELINE=8129; \
 		elif [ "$$prog" = "fib" ]; then BASELINE=32312; \
@@ -66,16 +68,36 @@ stats: $(V_SRCS) $(IV_CELLS) $(TB)
 		else BASELINE=0; fi; \
 		\
 		if [ -n "$$CYCLES" ] && [ "$$BASELINE" -gt 0 ]; then \
-			awk -v c="$$CYCLES" -v b="$$BASELINE" 'BEGIN { speedup=b/c; pct=(speedup-1)*100; printf "Speedup: %.2fx (+%.1f%%)\n", speedup, pct }'; \
+			SPEEDUP=$$(awk -v c="$$CYCLES" -v b="$$BASELINE" 'BEGIN {print b/c}'); \
+			echo "  Speedup: $${SPEEDUP}x"; \
+			echo "$$CPI $$SPEEDUP $$CYCLES $$INSTR $$BASELINE" >> build/metrics.tmp; \
 		fi; \
 		echo "======================="; \
 		echo ""; \
 	done
-	@echo "======================="
-	@echo "    OVERALL AVERAGE"
-	@awk '/Cycles:/ {c+=$$2} /Instructions:/ {i+=$$2} END {if(i>0) printf "  Global CPI: %.5f\n", c/i}' build/run_stats.txt
-	@awk 'BEGIN {b_tot=8129+32312+12314} /Cycles:/ {c+=$$2} END {if(c>0) { speedup=b_tot/c; pct=(speedup-1)*100; printf "Speedup: %.2fx (+%.1f%%)\n", speedup, pct }}' build/run_stats.txt
-	@echo "======================="
+
+	@echo "========================================================================"
+	@echo " 			OVERALL PERFORMANCE"
+	@awk 'BEGIN { \
+		printf "%-20s | %-12s | %-12s | %-12s\n", "Metric", "Arithmetic", "Geometric", "Aggregate"; \
+		print "------------------------------------------------------------------------"; \
+	} \
+	{ \
+		cpi_sum += $$1; cpi_log += log($$1); \
+		spd_sum += $$2; spd_log += log($$2); \
+		total_cyc += $$3; total_ins += $$4; total_base += $$5; \
+		count++; \
+	} \
+	END { \
+		if (count > 0) { \
+			printf "%-20s | %-12.5f | %-12.5f | %-12.5f\n", "CPI", (cpi_sum/count), exp(cpi_log/count), (total_cyc/total_ins); \
+			printf "%-20s | %-12s | %-12s | %-12s\n", "Speedup", \
+				sprintf("%.2fx", spd_sum/count), \
+				sprintf("%.2fx", exp(spd_log/count)), \
+				sprintf("%.2fx", total_base/total_cyc); \
+		} \
+	}' build/metrics.tmp
+	@echo "========================================================================"
 
 
 # --- Synthesis ---
