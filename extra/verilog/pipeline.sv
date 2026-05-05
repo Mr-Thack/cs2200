@@ -52,7 +52,7 @@ mbuf_data mbuf_in, mbuf_out;
 always_ff @(posedge clk) begin
     if (rst) begin
         halt_now <= 1'b0;
-    end else if (sig_halt) begin
+    end else if (sig_halt && !stall_now && !exec_branch_taken) begin
         // As soon as we get HALT in the decode stage,
         // latch onto the STALL forever and forever.
         halt_now <= 1'b1;
@@ -184,7 +184,7 @@ end
 
 // These are here to force Yosys to compile this module
 assign debug_pc = PC;
-assign halt_flag = halt_now;
+assign halt_flag = halt_now && !dbuf_out.valid && !ebuf_out.valid && !mbuf_out.valid;
 assign out_stat_cycles = stat_cycles;
 
 // ********************* //
@@ -379,7 +379,7 @@ always_ff @(posedge clk) begin
     // Need to check halt_now and dbuf_out.opcode because
     // halt_now is only latched on the clock cycle, so it wouldn't propogate
     // fast enough to prevent the decode stage from forwarding this
-    dbuf_out <= (rst || halt_now || stall_now || sig_halt || exec_branch_taken) ? '0 : dbuf_in;
+    dbuf_out <= (rst || halt_now || stall_now || exec_branch_taken) ? '0 : dbuf_in;
 end
 
 // ************* //
