@@ -291,8 +291,32 @@ always_ff @(posedge clk) begin
 end
 
 // ==========================================
-// JALR DATA FORWARDING & HAZARD DETECTION
+// DECODE DATA FORWARDING & HAZARD DETECTION
 // ==========================================
+
+logic [31:0] raw_dout1, raw_dout2;
+logic [31:0] fwd_dout1, fwd_dout2;
+
+// This is needed for the AGU and JALR's
+always_comb begin
+    fwd_dout1 = raw_dout1;
+    fwd_dout2 = raw_dout2;
+
+    // Check Memory Stage (mbuf_out) - Oldest, Lowest Priority
+    if ((mbuf_out.dr != 4'd0) && (mbuf_out.dr == dbuf_in.sr1)) fwd_dout1 = mbuf_out.data;
+    if ((mbuf_out.dr != 4'd0) && (mbuf_out.dr == dbuf_in.sr2)) fwd_dout2 = mbuf_out.data;
+
+    // Check Execute Stage (ebuf_out) - Newer, Highest Priority
+    if ((ebuf_out.dr != 4'd0) && (ebuf_out.dr == dbuf_in.sr1)) begin
+        fwd_dout1 = (ebuf_out.memop == MEM_READ) ? dmem_data_line : ebuf_out.reg_data;
+    end
+    if ((ebuf_out.dr != 4'd0) && (ebuf_out.dr == dbuf_in.sr2)) begin
+        fwd_dout2 = (ebuf_out.memop == MEM_READ) ? dmem_data_line : ebuf_out.reg_data;
+    end
+end
+
+
+// JALR Forwarding
 logic [31:0] jalr_target_fwd;
 logic jalr_stall;
 logic [3:0] jalr_reg;
@@ -301,30 +325,25 @@ logic [3:0] jalr_reg;
 assign jalr_reg = fbuf_out.ins1.rx;
 
 always_comb begin
-    // Default: read from the physical register file (dout1)
-    jalr_target_fwd = dout1; 
+    // Default: read from the register file (as forwarded)
+    jalr_target_fwd = fwd_dout1; 
     jalr_stall = 1'b0;
 
     if (fbuf_out.ins1.opcode == OP_JALR) begin
-        // 1. Check Writeback Stage (mbuf_out)
-        if ((mbuf_out.dr != 4'd0) && (mbuf_out.dr == jalr_reg)) begin
-            jalr_target_fwd = mbuf_out.data;
-        end
-
-        // 2. Check Memory Stage (ebuf_out)
-        if ((ebuf_out.dr != 4'd0) && (ebuf_out.dr == jalr_reg)) begin
-            jalr_target_fwd = (ebuf_out.memop == MEM_READ) ? dmem_data_line : ebuf_out.reg_data;
-        end
-
-        // 3. Check our Special Early LEA Latch (Freshest data!)
+        // Check our Special Early LEA Latch (Freshest data!)
         if (lea_latch.valid && lea_latch.dr == jalr_reg) begin
             jalr_target_fwd = 32'(lea_latch.target);
         end
 
-        // 4. Check Execute Stage Hazard (dbuf_out)
+        // Check Execute Stage Hazard (dbuf_out)
         // If we didn't get it from the LEA latch, and the ALU is crunching it right now...
         else if ((dbuf_out.dr != 4'd0) && (dbuf_out.dr == jalr_reg)) begin
-            jalr_stall = 1'b1; // STALL! We must wait 1 cycle for the ALU.
+            // Perhaps we can get it from the AGU?
+            if (dbuf_out.early_load_hit) begin
+                jalr_target_fwd = dbuf_out.early_load_data;
+            end else begin
+                jalr_stall = 1'b1; // STALL! We must wait 1 cycle for the ALU.
+            end
         end
     end
 end
@@ -334,8 +353,6 @@ end
 // DECODE STAGE //
 // ************ //
 
-logic [31:0] dout1, dout2;
-
 decode dec(
     .clk(clk),
     .rst(rst),
@@ -343,8 +360,8 @@ decode dec(
     .stall_now(stall_now),
     .halt_now(halt_now),
     .fbuf(fbuf_out),
-    .dout1(dout1),
-    .dout2(dout2),
+    .dout1(fwd_dout1),
+    .dout2(fwd_dout2),
     .sig_halt(sig_halt),
     .dbuf(dbuf_in),
     .jalr_target_fwd(jalr_target_fwd),
@@ -364,15 +381,23 @@ dprf registers(
     .regno_read2(dbuf_in.sr2),
     .regno_write(write_reg_dest),
     .write_data(write_reg_data),
-    .read_data1(dout1),
-    .read_data2(dout2)
+    .read_data1(raw_dout1),
+    .read_data2(raw_dout2)
 );
 
 
+// AGU Stall: If the instruction currently in Execute (dbuf_out) is calculating 
+// a register that our AGU needs for base or index, we MUST stall 1 cycle.
+assign agu_stall = (dbuf_out.dr != 4'd0) && (dbuf_in.cw.use_agu) && 
+                   ((dbuf_out.dr == dbuf_in.sr1 && dbuf_in.cw.agu_base_sel == 1'b0) 
+                   || (dbuf_out.dr == dbuf_in.sr2 && dbuf_in.cw.agu_base_sel == 1'b1));
+
+
 assign load_use_hazard = (dbuf_out.dr != 4'd0) && (dbuf_out.cw.memop == MEM_READ)
+                    && !dbuf_out.early_load_hit // Ignore stalling if we've already got data
                     && ((dbuf_out.dr == dbuf_in.sr1) || (dbuf_out.dr == dbuf_in.sr2));
 
-assign stall_now = load_use_hazard || jalr_stall;
+assign stall_now = load_use_hazard || jalr_stall || agu_stall;
 
 
 always_ff @(posedge clk) begin
@@ -423,14 +448,16 @@ always_comb begin
     // 2. Check Results of Execute Stage Second (newer data, so higher priority)
     // Overwrites any forwarding from the memory stage
     if ((ebuf_out.dr != 4'd0) && (ebuf_out.dr == dbuf_out.sr1)) begin
-        fwd_val1 = ebuf_out.reg_data;
+        fwd_val1 = (ebuf_out.memop == MEM_READ) ? dmem_data_line : ebuf_out.reg_data;
     end
     if ((ebuf_out.dr != 4'd0) && (ebuf_out.dr == dbuf_out.sr2)) begin
-        fwd_val2 = ebuf_out.reg_data;
+        fwd_val2 = (ebuf_out.memop == MEM_READ) ? dmem_data_line : ebuf_out.reg_data;
     end
 end
 
 execute exec(
+    .clk(clk),
+    .rst(rst),
     .dbuf(dbuf_out),
     .fwd_val1(fwd_val1),
     .fwd_val2(fwd_val2),

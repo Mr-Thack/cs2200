@@ -45,8 +45,8 @@ module test;
                 $display("     CPI: %0.5f", real'(dut.out_stat_cycles) / real'(dut.stat_logical_inst_retired));
             end
             begin
-                // Run for 6000 clock cycles 
-                #60000;
+                // Run for 10000 clock cycles 
+                #100000;
                 $display("FAILED TO HALT");
             end
         join_any

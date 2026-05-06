@@ -52,6 +52,8 @@ cmp_operation cmpop;
 mem_operation memop;
 logic_operation logop;
 
+logic [31:0] agu_base, agu_index, agu_offset, agu_result;
+
 assign ras_recover = exec_branch_taken && fbuf.ras_was_popped;
 
 always_comb begin
@@ -112,7 +114,7 @@ always_comb begin
         end
 
         // Evaluate our prediction
-        if (!fbuf.predicted_taken || jalr_target_fwd != fbuf.predict_target) begin
+        if (!stall_now && (!fbuf.predicted_taken || jalr_target_fwd != fbuf.predict_target)) begin
             decode_branch_taken = 1'b1;
             decode_branch_target = jalr_target_fwd;
         end
@@ -123,9 +125,20 @@ end
 // -------------------------------------------------------------------------
 // Execution Buffer Forwarding
 // -------------------------------------------------------------------------
-logic [19:0] imm_wire;
+logic [31:0] imm1_ext, imm2_ext;
 
 always_comb begin
+    imm1_ext = { {12{ins1.imm[19]}}, ins1.imm };
+    imm2_ext = { {12{ins2.imm[19]}}, ins2.imm };
+    
+    agu_base = cw.agu_base_sel ? dout2 : dout1;
+    agu_index = cw.agu_index_sel ? dout2 : dout1;
+    agu_offset = cw.agu_offset_sel ? imm2_ext : imm1_ext;
+
+    dbuf.agu_address = agu_base + (cw.has_index ? agu_index : '0) + agu_offset;
+    dbuf.early_load_data = '0;
+    dbuf.early_load_hit = (cw.memop == MEM_READ && '0);
+
     // Pass everything important along and let the EXECUTE Stage figure out
     // what it wants to do with our stuff
     dbuf.pc_plus_1 = fbuf.pc_plus_1;
@@ -137,9 +150,7 @@ always_comb begin
     dbuf.val2 = dout2;
     dbuf.sr2 = sr2;
 
-    imm_wire = cw.imm_sel ? ins2.imm : ins1.imm;
-
-    dbuf.offset = { {12{imm_wire[19]}}, imm_wire };
+    dbuf.offset = cw.imm_sel ? imm2_ext : imm1_ext; 
 
     dbuf.predicted_taken = fbuf.predicted_taken;
 

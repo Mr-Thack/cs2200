@@ -1,4 +1,7 @@
 module execute(
+    input logic clk,
+    input logic rst,
+
     input dbuf_data dbuf,
 
     input logic [31:0] fwd_val1,
@@ -60,12 +63,17 @@ log log0 (
     .branch_target(branch_target)
 );
 
+logic cache_hit;
+assign cache_hit = cw.use_agu && dbuf.early_load_hit;
+
 always_comb begin
     ebuf.dr = dbuf.dr;
-    ebuf.memop = cw.memop;
-    ebuf.address = alu_result;
+    ebuf.memop = cache_hit ? MEM_IGNORE : cw.memop;
+    ebuf.address = cw.use_agu ? dbuf.agu_address : alu_result;
+
     ebuf.mem_data = cw.mem_write_source ? alu_result : fwd_val1;
-    ebuf.reg_data = alu_result;
+    ebuf.reg_data = cache_hit ? dbuf.early_load_data : alu_result;
+
     ebuf.valid = dbuf.valid;
     ebuf.instructions_merged = cw.instructions_merged;
 

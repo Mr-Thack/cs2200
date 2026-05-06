@@ -50,7 +50,7 @@ package types;
         REG_PC_P1   = 3'b111  // Cur PC+1
     } reg_sel_t;
 
-    // This is currently 29 bits
+    // This is currently 32 bits
     typedef struct packed {
         // 9 bits
         // To select what we're reading
@@ -58,6 +58,15 @@ package types;
         reg_sel_t       dr_sel;
         reg_sel_t       sr1_sel;
         reg_sel_t       sr2_sel;
+
+        // 5 bits total
+        logic           use_agu; // Are we actually going to use it or not?
+        // This above is helpful for defaulting to 1X Scalar
+        // Because we have a lot of compulsory cache misses
+        logic           agu_base_sel; // Read1 or Read2 used
+        logic           agu_index_sel; // Read1 or Read2 used
+        logic           agu_offset_sel; // Use IMM1 or IMM2
+        logic           has_index; // uses agu_index_sel or 0
 
         // 1 bit
         // MUXes between ins1.imm and ins2.imm
@@ -69,14 +78,15 @@ package types;
         alu_source      src2;
 
         // 1 bit
-        // MUXes between sr1 and alu_result
+        // MUXes between sr1 (LOW) and alu_result (HIGH)
+        // for the memory address for whatever operation we'll be doing
         logic           mem_write_source;
 
         // 9 bits
         alu_operation   aluop; // 3
         cmp_operation   cmpop; // 2
         mem_operation   memop; // 2
-        logic_operation logop; // 2
+        logic_operation logop;
 
         // 3 bits
         // Whether this is HALT
@@ -125,14 +135,23 @@ package types;
 
     typedef struct packed {
         logic [31:0] pc_plus_1;
+
         logic [31:0] val1;
         logic [31:0] val2;
+
         logic [31:0] offset;
+
+        logic [31:0] agu_address;
+        logic [31:0] early_load_data;
+        logic [31:0] early_load_hit;
+
         logic [3:0] dr;
         logic [3:0] sr1;
         logic [3:0] sr2;
+
         control_word_t cw;
         logic predicted_taken;
+
         logic btb_hit; // Just for profiling
         logic valid; // Also for profiling
     } dbuf_data;

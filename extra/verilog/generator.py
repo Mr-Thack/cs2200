@@ -67,11 +67,12 @@ def write_verilog_hex(filename, data_list, bit_width):
 
     print(f"{filename} generated successfully with {bit_width}-bit formatting!")
 
-def build_cw(instructions_merged=0, imm_sel=0, dr_sel=REG_IGNORE, sr1_sel=REG_IGNORE, 
-             sr2_sel=REG_IGNORE, src1=ALU_VAL1, src2=ALU_VAL2, mem_write_source=0,
+def build_cw(instructions_merged=0, dr_sel=REG_IGNORE, sr1_sel=REG_IGNORE, sr2_sel=REG_IGNORE,
+             use_agu=0, agu_base_sel=0, agu_index_sel=0, agu_offset_sel=0, has_index=0,
+             imm_sel=0, src1=ALU_VAL1, src2=ALU_VAL2, mem_write_source=0,
              aluop=ALU_IGNORE, cmpop=CMP_IGNORE, memop=MEM_IGNORE, logop=LOGIC_IGNORE,
              sig_halt=0):
-    """Packs the control signals into a 28-bit integer."""
+    """Packs the control signals into a 32-bit integer."""
     # MAKE SURE TO MATCH THE CONTROL WORD TYPE IN TYPES.SV
     packer = BitPacker()
 
@@ -80,6 +81,12 @@ def build_cw(instructions_merged=0, imm_sel=0, dr_sel=REG_IGNORE, sr1_sel=REG_IG
 
     packer.add(sr1_sel, 3)
     packer.add(sr2_sel, 3)
+    
+    packer.add(use_agu, 1)
+    packer.add(agu_base_sel, 1)
+    packer.add(agu_index_sel, 1)
+    packer.add(agu_offset_sel, 1)
+    packer.add(has_index, 1)
 
     packer.add(imm_sel, 1)
 
@@ -151,7 +158,7 @@ def generate_rom():
 
 
     # Write to a CircuitSim compatible format
-    write_verilog_hex("merged_rom.hex", rom_data, bit_width=27)
+    write_verilog_hex("merged_rom.hex", rom_data, bit_width=32)
 
 if __name__ == "__main__":
     generate_rom()
