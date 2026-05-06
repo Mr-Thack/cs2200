@@ -73,7 +73,7 @@ always_ff @(posedge clk) begin
 
         // 3. Step Forward Normally
         end else begin
-            PC <= PC + 32'(fbuf_in.cw.instructions_merged + 1);
+            PC <= PC + 32'(fbuf_in.instructions_merged + 1);
         end
 
     end

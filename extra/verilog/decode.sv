@@ -69,38 +69,38 @@ always_comb begin
     sig_halt = rst ? 1'b1 : cw.sig_halt;
 
     // 2. MUX the Destination Register
-    case (cw.dr_sel)
+    unique case (cw.dr_sel)
+        REG_IGNORE: dr = '0;
         REG_RX:  dr = ins1.rx;
         REG_RY:  dr = ins1.ry;
         REG_RZ:  dr = ins1.imm.rz;
         REG_INS2_RX:  dr = ins2.rx;
         REG_INS2_RY:  dr = ins2.ry;
         REG_INS2_RZ:  dr = ins2.imm.rz;
-        REG_PC_P1:    dr = 'X; // This is an illegal operation 
-        default: dr = '0;
+        REG_PC:    dr = 'X; // This is an illegal operation 
     endcase
 
     // 3. MUX Source Register 1
     case (cw.sr1_sel)
+        REG_IGNORE: sr1 = '0;
         REG_RX:  sr1 = ins1.rx;
         REG_RY:  sr1 = ins1.ry;
         REG_RZ:  sr1 = ins1.imm.rz;
         REG_INS2_RX:  sr1 = ins2.rx;
         REG_INS2_RY:  sr1 = ins2.ry;
         REG_INS2_RZ:  sr1 = ins2.imm.rz;
-        REG_PC_P1:    sr1 = fbuf.pc_plus_1; 
         default: sr1 = '0;
     endcase
 
     // 4. MUX Source Register 2
     case (cw.sr2_sel)
+        REG_IGNORE: sr2 = '0;
         REG_RX:  sr2 = ins1.rx;
         REG_RY:  sr2 = ins1.ry;
         REG_RZ:  sr2 = ins1.imm.rz;
         REG_INS2_RX:  sr2 = ins2.rx;
         REG_INS2_RY:  sr2 = ins2.ry;
         REG_INS2_RZ:  sr2 = ins2.imm.rz;
-        REG_PC_P1:    sr2 = fbuf.pc_plus_1; 
         default: sr2 = '0;
     endcase
    
@@ -131,24 +131,37 @@ always_comb begin
     imm1_ext = { {12{ins1.imm[19]}}, ins1.imm };
     imm2_ext = { {12{ins2.imm[19]}}, ins2.imm };
     
-    agu_base = cw.agu_base_sel ? dout2 : dout1;
-    agu_index = cw.agu_index_sel ? dout2 : dout1;
-    agu_offset = cw.agu_offset_sel ? imm2_ext : imm1_ext;
-
-    dbuf.agu_address = agu_base + (cw.has_index ? agu_index : '0) + agu_offset;
-    dbuf.early_load_data = '0;
-    dbuf.early_load_hit = (cw.memop == MEM_READ && '0);
 
     // Pass everything important along and let the EXECUTE Stage figure out
     // what it wants to do with our stuff
     dbuf.pc_plus_1 = fbuf.pc_plus_1;
     dbuf.dr = dr;
 
-    dbuf.val1 = dout1;
-    dbuf.sr1 = sr1;
+    dbuf.val1 = (cw.sr1_sel == REG_PC)? fbuf.pc_plus_1 : dout1;
+    dbuf.sr1 = (cw.sr1_sel == REG_PC)? '0 : sr1;
 
-    dbuf.val2 = dout2;
-    dbuf.sr2 = sr2;
+    dbuf.val2 = (cw.sr2_sel == REG_PC)? fbuf.pc_plus_1 : dout2;
+    dbuf.sr2 = (cw.sr2_sel == REG_PC)? '0 : sr2;
+    
+    case (cw.agu_base_sel)
+        AGU_IGNORE: agu_base = '0;
+        AGU_READ1:  agu_base = dout1;
+        AGU_READ2:  agu_base = dout2;
+        AGU_PC:  agu_base = fbuf.pc_plus_1; 
+    endcase
+
+    case (cw.agu_index_sel)
+        AGU_IGNORE: agu_index = '0;
+        AGU_READ1:  agu_index = dout1;
+        AGU_READ2:  agu_index = dout2;
+        AGU_PC:  agu_index = fbuf.pc_plus_1; 
+    endcase
+
+    agu_offset = cw.agu_offset_sel ? imm2_ext : imm1_ext;
+
+    dbuf.agu_address = agu_base + agu_index + agu_offset;
+    dbuf.early_load_data = '0;
+    dbuf.early_load_hit = (cw.memop == MEM_READ && '0);
 
     dbuf.offset = cw.imm_sel ? imm2_ext : imm1_ext; 
 
@@ -158,6 +171,7 @@ always_comb begin
     dbuf.valid = fbuf.valid; 
 
     dbuf.cw = cw;
+    dbuf.instructions_merged = fbuf.instructions_merged;
 end
 
 endmodule

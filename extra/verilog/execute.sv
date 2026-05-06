@@ -72,10 +72,10 @@ always_comb begin
     ebuf.address = cw.use_agu ? dbuf.agu_address : alu_result;
 
     ebuf.mem_data = cw.mem_write_source ? alu_result : fwd_val1;
-    ebuf.reg_data = cache_hit ? dbuf.early_load_data : alu_result;
+    ebuf.reg_data = cache_hit ? dbuf.early_load_data : (cw.memop == MEM_WRITE ? dbuf.agu_address : alu_result);
 
     ebuf.valid = dbuf.valid;
-    ebuf.instructions_merged = cw.instructions_merged;
+    ebuf.instructions_merged = dbuf.instructions_merged;
 
     // Initialize to 0 because split_wide will split this into multiple
     // registers

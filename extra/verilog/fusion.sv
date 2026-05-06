@@ -6,7 +6,8 @@ module fusion(
 
     input [1:0] extras,
 
-    output control_word_t cw
+    output control_word_t cw,
+    output instructions_merged
 );
 
 
@@ -31,10 +32,9 @@ initial begin
         single_rom[i].sr2_sel  = REG_IGNORE;
         
         single_rom[i].use_agu = 1'b0;
-        single_rom[i].agu_base_sel  = 1'b0;
-        single_rom[i].agu_index_sel  = 1'b0;
+        single_rom[i].agu_base_sel  = AGU_IGNORE;
+        single_rom[i].agu_index_sel  = AGU_IGNORE;
         single_rom[i].agu_offset_sel  = 1'b0;
-        single_rom[i].has_index  = 1'b0;
 
         single_rom[i].imm_sel  = 1'b0;
 
@@ -49,7 +49,6 @@ initial begin
         single_rom[i].logop    = LOGIC_IGNORE;
 
         single_rom[i].sig_halt = 1'b0;
-        single_rom[i].instructions_merged = 1'b0;
     end
 
     // 2. Define the Control Words
@@ -75,10 +74,6 @@ initial begin
     single_rom[OP_LW].dr_sel  = REG_RX;
     single_rom[OP_LW].sr1_sel = REG_RY;
     single_rom[OP_LW].src2    = ALU_OFFSET;
-    single_rom[OP_LW].agu_base_sel = 0;
-    single_rom[OP_LW].agu_index_sel = 0;
-    single_rom[OP_LW].has_index = 0;
-    single_rom[OP_LW].agu_offset_sel = 0;
     single_rom[OP_LW].aluop   = ALU_ADD;
     single_rom[OP_LW].memop   = MEM_READ;
 
@@ -86,10 +81,6 @@ initial begin
     single_rom[OP_SW].sr1_sel = REG_RX;
     single_rom[OP_SW].sr2_sel = REG_RY;
     single_rom[OP_SW].src1    = ALU_OFFSET;
-    single_rom[OP_SW].agu_base_sel = 1;
-    single_rom[OP_SW].agu_index_sel = 0;
-    single_rom[OP_SW].has_index = 0;
-    single_rom[OP_SW].agu_offset_sel = 0;
     single_rom[OP_SW].aluop   = ALU_ADD;
     single_rom[OP_SW].memop   = MEM_WRITE;
 
@@ -167,17 +158,21 @@ assign merge_index = {
 // ----------------------
 
 control_word_t cw_single, cw_merged;
-logic [1:0] instructions_merged;
 
 assign cw_single = single_rom[ins1.opcode];
 assign cw_merged = merged_rom[merge_index];
 
+`define USE_FUSION
+
 // If no merge available, go back to single:
 always_comb begin
-    cw = cw_single;
-    cw.instructions_merged = 2'd0;
-    // cw = (cw_merged == '0 || extras == '0) ? cw_single : cw_merged;
-    // cw.instructions_merged = (cw_merged == '0 || extras == '0) ? 2'd0 : 2'd1;
+    `ifndef USE_FUSION
+        cw = cw_single;
+        instructions_merged = 2'd0;
+    `else
+        cw = (cw_merged == '0 || extras == '0) ? cw_single : cw_merged;
+        instructions_merged = (cw_merged == '0 || extras == '0) ? 2'd0 : 2'd1;
+    `endif
 end
 
 endmodule

@@ -46,12 +46,14 @@ logic [31:0] ext_imm;
 assign ext_imm = {{12{IR1.imm[19]}}, IR1.imm};
 
 control_word_t cw;
+logic instructions_merged;
 
 fusion fuse(
     .ins1(IR1),
     .ins2(IR2),
     .extras(extras),
-    .cw(cw)
+    .cw(cw),
+    .instructions_merged(instructions_merged)
 );
 
 always_comb begin
@@ -59,6 +61,7 @@ always_comb begin
     fbuf.ins1 = IR1;
     fbuf.ins2 = IR2;
     fbuf.cw = cw;
+    fbuf.instructions_merged = instructions_merged;
 
     ras_pop = 1'b0;
     predict_taken = '0;

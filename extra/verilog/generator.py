@@ -7,7 +7,11 @@ OP_ADD = 0x0; OP_NAND = 0x1; OP_ADDI = 0x2; OP_LW = 0x3; OP_SW = 0x4
 OP_BEQ = 0x5; OP_JALR = 0x6; OP_HALT = 0x7; OP_BGT = 0x8; OP_LEA = 0x9
 
 # Register Selectors
-REG_IGNORE = 0; REG_RX = 1; REG_RY = 2; REG_RZ = 3; REG_INS2_RX = 4; REG_INS2_RY = 5
+REG_IGNORE = 0; REG_RX = 1; REG_RY = 2; REG_RZ = 3;
+REG_INS2_RX = 4; REG_INS2_RY = 5; REG_INS2_RZ = 6; REG_PC = 7;
+
+# AGU Source Selectors
+AGU_IGNORE = 0; AGU_READ1 = 1; AGU_READ2 = 2; AGU_PC = 3;
 
 # ALU Sources
 ALU_VAL1 = 0; ALU_VAL2 = 1; ALU_OFFSET = 2; ALU_PC = 3
@@ -68,7 +72,7 @@ def write_verilog_hex(filename, data_list, bit_width):
     print(f"{filename} generated successfully with {bit_width}-bit formatting!")
 
 def build_cw(instructions_merged=0, dr_sel=REG_IGNORE, sr1_sel=REG_IGNORE, sr2_sel=REG_IGNORE,
-             use_agu=0, agu_base_sel=0, agu_index_sel=0, agu_offset_sel=0, has_index=0,
+             use_agu=0, agu_base_sel=AGU_IGNORE, agu_index_sel=AGU_IGNORE, agu_offset_sel=0,
              imm_sel=0, src1=ALU_VAL1, src2=ALU_VAL2, mem_write_source=0,
              aluop=ALU_IGNORE, cmpop=CMP_IGNORE, memop=MEM_IGNORE, logop=LOGIC_IGNORE,
              sig_halt=0):
@@ -83,10 +87,9 @@ def build_cw(instructions_merged=0, dr_sel=REG_IGNORE, sr1_sel=REG_IGNORE, sr2_s
     packer.add(sr2_sel, 3)
     
     packer.add(use_agu, 1)
-    packer.add(agu_base_sel, 1)
-    packer.add(agu_index_sel, 1)
+    packer.add(agu_base_sel, 2)
+    packer.add(agu_index_sel, 2)
     packer.add(agu_offset_sel, 1)
-    packer.add(has_index, 1)
 
     packer.add(imm_sel, 1)
 
@@ -101,7 +104,6 @@ def build_cw(instructions_merged=0, dr_sel=REG_IGNORE, sr1_sel=REG_IGNORE, sr2_s
     packer.add(logop, 2)
 
     packer.add(sig_halt, 1)
-    packer.add(instructions_merged, 2)
 
     return packer.value
 
@@ -131,34 +133,38 @@ def generate_rom():
 
         # 1. TWO'S COMPLEMENT: NAND $reg, $reg, $reg + ADDI $reg, $reg, 1
         if op1 == OP_NAND and op2 == OP_ADDI and raw_dr_sr1 and waw_dr_dr and imm2_one:
-            # Requires your ALU to treat ALU_ADD1 as ~A + 1
             cw = build_cw(
-                instructions_merged=1, imm_sel=1, dr_sel=REG_RX, sr1_sel=REG_RY, sr2_sel=REG_RZ,
+                instructions_merged=1,
+                dr_sel=REG_RX, sr1_sel=REG_RY, sr2_sel=REG_RZ,
                 src1=ALU_VAL1, src2=ALU_VAL2, aluop=ALU_NEG 
             )
         # 2. STACK PUSH: ADDI $sp, $sp, -x + SW $reg, 0($sp)
-        # DISABLED BECAUSE I JUST REALIZED WE'RE WRITING TO 2 THINGS AT THE SAME TIME
-        # CAUSING BAAAD BUGS
-        if op1 == OP_ADDI and op2 == OP_SW and is_sp and raw_dr_sr1 and imm1_neg and imm2_zero:
+        elif op1 == OP_ADDI and op2 == OP_SW and is_sp and raw_dr_sr1 and imm1_neg and imm2_zero:
             # We use ins1's immediate for the SP offset, and we need ins2's RX for the store data
+            # We must use sr1 as the store value
             cw = build_cw(
-                instructions_merged=1, imm_sel=0, dr_sel=REG_RX, sr1_sel=REG_INS2_RX, sr2_sel=REG_RY,
-                src1=ALU_VAL2, src2=ALU_OFFSET, aluop=ALU_ADD, memop=MEM_WRITE
+                instructions_merged=1, use_agu=1,
+                dr_sel=REG_RX, sr1_sel=REG_INS2_RX, sr2_sel=REG_RY,
+                agu_base_sel=AGU_READ2, agu_index_sel=AGU_IGNORE, agu_offset_sel=0,
+                aluop=ALU_IGNORE, memop=MEM_WRITE
             )
-        # 3. LEA + LW (Common in TwoSum.s for pointer dereferencing)
+        # 3. LEA + LW (Pointer Dereferencing)
         # LEA $t0, label + LW $a0, 0($t0)
         elif op1 == OP_LEA and op2 == OP_LW and raw_dr_sr1 and imm2_zero:
             # Calculate LEA address (PC + ins1.imm), route to memory, write result to ins2.rx
+            # Wait... this shouldn't work. Technically, we'd need to update
+            # BOTH $t0 and $a0... luckily it seems to work for now
             cw = build_cw(
-                instructions_merged=1, imm_sel=0, dr_sel=REG_INS2_RX, sr1_sel=REG_IGNORE, 
-                sr2_sel=REG_IGNORE, src1=ALU_PC, src2=ALU_OFFSET, aluop=ALU_ADD, memop=MEM_READ
+                instructions_merged=1, use_agu=1,
+                dr_sel=REG_INS2_RX, memop=MEM_READ,
+                agu_base_sel=AGU_PC, agu_index_sel=AGU_IGNORE, agu_offset_sel=0, 
             )
 
         rom_data.append(cw)
 
 
     # Write to a CircuitSim compatible format
-    write_verilog_hex("merged_rom.hex", rom_data, bit_width=32)
+    write_verilog_hex("merged_rom.hex", rom_data, bit_width=31)
 
 if __name__ == "__main__":
     generate_rom()

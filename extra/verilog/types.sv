@@ -47,10 +47,17 @@ package types;
         REG_INS2_RX = 3'b100, // ins2.rx
         REG_INS2_RY = 3'b101, // ins2.ry 
         REG_INS2_RZ = 3'b110, // ins2.imm.rz 
-        REG_PC_P1   = 3'b111  // Cur PC+1
+        REG_PC      = 3'b111  // Cur PC+1
     } reg_sel_t;
 
-    // This is currently 32 bits
+    typedef enum logic [1:0] {
+        AGU_IGNORE,
+        AGU_READ1,
+        AGU_READ2,
+        AGU_PC
+    } agu_src_t;
+
+    // This is currently 31 bits
     typedef struct packed {
         // 9 bits
         // To select what we're reading
@@ -59,17 +66,16 @@ package types;
         reg_sel_t       sr1_sel;
         reg_sel_t       sr2_sel;
 
-        // 5 bits total
+        // 6 bits total
         logic           use_agu; // Are we actually going to use it or not?
         // This above is helpful for defaulting to 1X Scalar
         // Because we have a lot of compulsory cache misses
-        logic           agu_base_sel; // Read1 or Read2 used
-        logic           agu_index_sel; // Read1 or Read2 used
-        logic           agu_offset_sel; // Use IMM1 or IMM2
-        logic           has_index; // uses agu_index_sel or 0
+        agu_src_t       agu_base_sel; 
+        agu_src_t       agu_index_sel; 
+        logic           agu_offset_sel; // Use IMM1 (0) or IMM2 (1)
 
         // 1 bit
-        // MUXes between ins1.imm and ins2.imm
+        // MUXes between ins1.imm and ins2.imm for ALU imm
         logic           imm_sel;
 
         // 4 bits
@@ -88,12 +94,9 @@ package types;
         mem_operation   memop; // 2
         logic_operation logop;
 
-        // 3 bits
+        // 1 bit
         // Whether this is HALT
-        // And the count of how many merged
-        // (0 = 0 instruction merged, or exec only 1)
         logic           sig_halt;
-        logic [1:0] instructions_merged;
     } control_word_t;
 
     typedef enum logic [3:0] {
@@ -126,6 +129,7 @@ package types;
         instruction_data ins1;
         instruction_data ins2;
         control_word_t cw;
+        logic [1:0] instructions_merged;
         logic predicted_taken;
         logic [31:0] predict_target;
         logic btb_hit; // This is just for profiling
@@ -150,6 +154,7 @@ package types;
         logic [3:0] sr2;
 
         control_word_t cw;
+        logic [1:0] instructions_merged;
         logic predicted_taken;
 
         logic btb_hit; // Just for profiling
