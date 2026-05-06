@@ -50,7 +50,7 @@ stats: $(V_SRCS) $(IV_CELLS) $(TB)
 	@echo "--- Compiling Simulation Environment ---"
 	python generator.py
 	@mkdir -p build
-	@rm -f build/run_stats.txt
+	@rm -f build/run_stats.txt build/metrics.tmp
 	@iverilog -g2012 -o build/stats.out $(IV_CELLS) $(V_SRCS) $(TB)
 	@for prog in $(PROGRAMS); do \
 		echo "======================="; \
