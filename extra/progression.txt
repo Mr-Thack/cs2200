@@ -106,3 +106,11 @@ That means we're pulling from Bank 4's Address 0, but Banks 1, 2, and 3's Addres
 So, we can't feed the same address into all of them. The MMU has to do something.
 POW: 1255, FIB: 4785, TWO_SUM: 2076 
 
+Eigth Attempt:
+Added an AGU into Decode. However, now we're limited by the fact our DPRF is 2R/1W.
+We would need 4R/2W or maybe just 3R/2W to squeeze out extra performance.
+I'm dying though, so I'm gonna call quits for now.
+I added two newly possible macro op mergers as well:
+POW: 1247, FIB: 4785, TWO_SUM: 1844
+Also, the Stats have been corrected, so now we can confidently say we're technically superscalar.
+

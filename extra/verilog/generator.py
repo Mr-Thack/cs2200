@@ -159,6 +159,28 @@ def generate_rom():
                 dr_sel=REG_INS2_RX, memop=MEM_READ,
                 agu_base_sel=AGU_PC, agu_index_sel=AGU_IGNORE, agu_offset_sel=0, 
             )
+        # 4. ADD + LW (Array Traversal)
+        # ADD $s2, $s1, $s0 + LW $s2, 0($s2)
+        elif op1 == OP_ADD and op2 == OP_LW and raw_dr_sr1 and imm2_zero:
+            cw = build_cw(
+                instructions_merged=1, use_agu=1,
+                sr1_sel=REG_RY, sr2_sel=REG_RZ, 
+                agu_base_sel=AGU_READ1, agu_index_sel=AGU_READ2, # Address: s1 + s0
+                agu_offset_sel=1,   # Use imm2 (which is 0)
+                dr_sel=REG_INS2_RX, memop=MEM_READ
+            )
+        # -------------------------------------------------------------------
+        # 5. LEA + SW (Pointer Write Dereferencing)
+        # LEA $t0, label + SW $t1, 0($t0)
+        # -------------------------------------------------------------------
+        elif op1 == OP_LEA and op2 == OP_SW and raw_dr_sr1 and imm2_zero:
+            cw = build_cw(
+                instructions_merged=1, use_agu=1,
+                agu_base_sel=AGU_PC, agu_index_sel=AGU_IGNORE, agu_offset_sel=0, # Address: PC + imm1
+                sr1_sel=REG_INS2_RX,  # The data to store ($t1)
+                dr_sel=REG_IGNORE,    # NO register writes! Perfect!
+                mem_write_source=0, memop=MEM_WRITE
+            )
 
         rom_data.append(cw)
 
