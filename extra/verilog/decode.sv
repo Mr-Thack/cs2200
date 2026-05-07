@@ -145,15 +145,15 @@ always_comb begin
     
     case (cw.agu_base_sel)
         AGU_IGNORE: agu_base = '0;
-        AGU_READ1:  agu_base = dout1;
-        AGU_READ2:  agu_base = dout2;
+        AGU_READ1:  agu_base = dbuf.val1;
+        AGU_READ2:  agu_base = dbuf.val2;
         AGU_PC:  agu_base = fbuf.pc_plus_1; 
     endcase
 
     case (cw.agu_index_sel)
         AGU_IGNORE: agu_index = '0;
-        AGU_READ1:  agu_index = dout1;
-        AGU_READ2:  agu_index = dout2;
+        AGU_READ1:  agu_index = dbuf.val1;
+        AGU_READ2:  agu_index = dbuf.val2;
         AGU_PC:  agu_index = fbuf.pc_plus_1; 
     endcase
 
