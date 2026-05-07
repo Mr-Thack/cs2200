@@ -19,7 +19,7 @@ module fusion(
 
 // Load from Init ROM
 initial begin
-    $readmemh("./merged_rom.hex", merged_rom);
+    $readmemh("./build/merged_rom.hex", merged_rom);
 end
 
 

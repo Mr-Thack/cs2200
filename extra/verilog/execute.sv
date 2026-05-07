@@ -4,9 +4,6 @@ module execute(
 
     input dbuf_data dbuf,
 
-    input logic [31:0] fwd_val1,
-    input logic [31:0] fwd_val2,
-
     output logic branch_taken,
     output logic [31:0] branch_target,
     output btb_write_data wdata,
@@ -24,15 +21,15 @@ logic cmp_result;
 
 always_comb begin
     unique case(cw.src1)
-       ALU_VAL1:    alu_val1 = fwd_val1; 
-       ALU_VAL2:    alu_val1 = fwd_val2; 
+       ALU_VAL1:    alu_val1 = dbuf.val1; 
+       ALU_VAL2:    alu_val1 = dbuf.val2; 
        ALU_OFFSET:  alu_val1 = dbuf.offset; 
        ALU_PC:      alu_val1 = dbuf.pc_plus_1; 
     endcase
     
     unique case(cw.src2)
-        ALU_VAL1:    alu_val2 = fwd_val1; 
-        ALU_VAL2:    alu_val2 = fwd_val2; 
+        ALU_VAL1:    alu_val2 = dbuf.val1; 
+        ALU_VAL2:    alu_val2 = dbuf.val2; 
         ALU_OFFSET:  alu_val2 = dbuf.offset; 
         ALU_PC:      alu_val2 = dbuf.pc_plus_1; 
     endcase
@@ -71,7 +68,7 @@ always_comb begin
     ebuf.memop = cache_hit ? MEM_IGNORE : cw.memop;
     ebuf.address = cw.use_agu ? dbuf.agu_address : alu_result;
 
-    ebuf.mem_data = cw.mem_write_source ? alu_result : fwd_val1;
+    ebuf.mem_data = cw.mem_write_source ? alu_result : dbuf.val1;
     ebuf.reg_data = cache_hit ? dbuf.early_load_data : (cw.memop == MEM_WRITE ? dbuf.agu_address : alu_result);
 
     ebuf.valid = dbuf.valid;
@@ -104,7 +101,7 @@ always_comb begin
         // to the BTB
         if (dbuf.dr != 4'd0) begin
             wdata.pc = dbuf.pc_plus_1 - 32'd1;
-            wdata.target = fwd_val1;
+            wdata.target = dbuf.val1;
             wdata.taken = 1'b1;
             wdata.write = 1'b1;
         end

@@ -302,17 +302,17 @@ always_comb begin
     fwd_dout1 = raw_dout1;
     fwd_dout2 = raw_dout2;
 
-    // Check Memory Stage (mbuf_out) - Oldest, Lowest Priority
-    if ((mbuf_out.dr != 4'd0) && (mbuf_out.dr == dbuf_in.sr1)) fwd_dout1 = mbuf_out.data;
-    if ((mbuf_out.dr != 4'd0) && (mbuf_out.dr == dbuf_in.sr2)) fwd_dout2 = mbuf_out.data;
-
-    // Check Execute Stage (ebuf_out) - Newer, Highest Priority
+    // Check Memory Stage
     if ((ebuf_out.dr != 4'd0) && (ebuf_out.dr == dbuf_in.sr1)) begin
         fwd_dout1 = (ebuf_out.memop == MEM_READ) ? dmem_data_line : ebuf_out.reg_data;
     end
     if ((ebuf_out.dr != 4'd0) && (ebuf_out.dr == dbuf_in.sr2)) begin
         fwd_dout2 = (ebuf_out.memop == MEM_READ) ? dmem_data_line : ebuf_out.reg_data;
     end
+
+    // Check Execute Stage
+    if ((ebuf_in.dr != 4'd0) && (ebuf_in.dr == dbuf_in.sr1)) fwd_dout1 = ebuf_in.reg_data;
+    if ((ebuf_in.dr != 4'd0) && (ebuf_in.dr == dbuf_in.sr2)) fwd_dout2 = ebuf_in.reg_data;
 end
 
 
@@ -389,8 +389,8 @@ dprf registers(
 // AGU Stall: If the instruction currently in Execute (dbuf_out) is calculating 
 // a register that our AGU needs for base or index, we MUST stall 1 cycle.
 assign agu_stall = (dbuf_out.dr != 4'd0) && (dbuf_in.cw.use_agu) && 
-                   ((dbuf_out.dr == dbuf_in.sr1 && dbuf_in.cw.agu_base_sel == 1'b0) 
-                   || (dbuf_out.dr == dbuf_in.sr2 && dbuf_in.cw.agu_base_sel == 1'b1));
+                   ((dbuf_out.dr == dbuf_in.sr1 && (dbuf_in.cw.agu_base_sel == AGU_READ1 || dbuf_in.cw.agu_index_sel == AGU_READ1)) 
+                   || (dbuf_out.dr == dbuf_in.sr2 && (dbuf_in.cw.agu_base_sel == AGU_READ2 || dbuf_in.cw.agu_index_sel == AGU_READ2)));
 
 
 assign load_use_hazard = (dbuf_out.dr != 4'd0) && (dbuf_out.cw.memop == MEM_READ)
@@ -411,56 +411,10 @@ end
 // EXECUTE STAGE //
 // ************* //
 
-
-// We need to calculate the forwarded values
-// And we might overwrite the alu_val's
-// But then use the forwarded values later / elsewhere (like in SW)
-// So, we need to keep these separate.
-logic [31:0] fwd_val1;
-logic [31:0] fwd_val2;
-
-always_comb begin
-    fwd_val1 = dbuf_out.val1;
-    fwd_val2 = dbuf_out.val2;
-
-    // So... we need to do Data Forwarding
-    // But ummm.... as of the time I'm writing, I'm too tired to modularize
-    // So, remember to copy and paste and edit properly!!!
-
-    // Also, the diagram put this before the DBUF,
-    // but we're doing this afterwards and overwriting the data from dbuf
-    // because the data is latched at the end of the cycle,
-    // so we would want to wait until after the EX and MEM stages are done,
-    // so that they can latch their data into the buffer and then we forward.
-    // Oh wait, I could have also checked mbuf_in and ebuf_in instead...
-    // Then I could've done what the diagram did and forward at the end of the
-    // decode stage before the execute stage.
-    // Oh well! This works and I don't care anymore!
-
-    // 1. Check Results of Memory Stage First (older data, so lower priority)
-    if ((mbuf_out.dr != 4'd0) && (mbuf_out.dr == dbuf_out.sr1)) begin
-        fwd_val1 = mbuf_out.data;
-    end
-    if ((mbuf_out.dr != 4'd0) && (mbuf_out.dr == dbuf_out.sr2)) begin
-        fwd_val2 = mbuf_out.data;
-    end
-
-    // 2. Check Results of Execute Stage Second (newer data, so higher priority)
-    // Overwrites any forwarding from the memory stage
-    if ((ebuf_out.dr != 4'd0) && (ebuf_out.dr == dbuf_out.sr1)) begin
-        fwd_val1 = (ebuf_out.memop == MEM_READ) ? dmem_data_line : ebuf_out.reg_data;
-    end
-    if ((ebuf_out.dr != 4'd0) && (ebuf_out.dr == dbuf_out.sr2)) begin
-        fwd_val2 = (ebuf_out.memop == MEM_READ) ? dmem_data_line : ebuf_out.reg_data;
-    end
-end
-
 execute exec(
     .clk(clk),
     .rst(rst),
     .dbuf(dbuf_out),
-    .fwd_val1(fwd_val1),
-    .fwd_val2(fwd_val2),
     .branch_taken(exec_branch_taken),
     .branch_target(exec_branch_target),
     .wdata(btb_wdata),
