@@ -19,9 +19,18 @@ SIM = build/cpu.sim
 
 PROGRAMS = pow fib TwoSum
 
+ROM_HEX = build/merged_rom.hex
+
 # --- Default ---
 .PHONY: stats 
 all: test
+
+$(ROM_HEX): generator.py
+	@echo "--- Generating ROM ---"
+	@mkdir -p build
+	python generator.py
+
+microcode: $(ROM_HEX)
 
 $(V_SRCS): $(SV_SRCS) $(TYPES)
 	@echo "--- Converting Core SystemVerilog to Verilog ---"
@@ -33,9 +42,8 @@ $(V_SRCS): $(SV_SRCS) $(TYPES)
 verilog: $(V_SRCS)
 
 # --- Simulation ---
-test: $(V_SRCS) $(IV_CELLS) $(TB)
+test: $(V_SRCS) $(IV_CELLS) $(TB) $(ROM_HEX)
 	@echo "--- Compiling Simulation ---"
-	python generator.py
 	iverilog -g2012 -o $(OUT) $(IV_CELLS) $(V_SRCS) $(TB)
 	@echo "--- Running Simulation ---"
 	vvp $(OUT)
@@ -46,9 +54,8 @@ runtest: test
 
 
 # --- Stats Automation ---
-stats: $(V_SRCS) $(IV_CELLS) $(TB)
+stats: $(V_SRCS) $(IV_CELLS) $(TB) $(ROM_HEX)
 	@echo "--- Compiling Simulation Environment ---"
-	python generator.py
 	@mkdir -p build
 	@rm -f build/run_stats.txt build/metrics.tmp
 	@iverilog -g2012 -o build/stats.out $(IV_CELLS) $(V_SRCS) $(TB)
